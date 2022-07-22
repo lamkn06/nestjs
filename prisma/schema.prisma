@@ -1,0 +1,2415 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model admin_user {
+  id                          Int                  @id @default(autoincrement())
+  username                    String               @db.VarChar(180)
+  username_canonical          String               @unique(map: "UNIQ_AD8A54A992FC23A8") @db.VarChar(180)
+  email                       String               @db.VarChar(180)
+  email_canonical             String               @unique(map: "UNIQ_AD8A54A9A0D96FBF") @db.VarChar(180)
+  enabled                     Boolean
+  salt                        String?              @db.VarChar(255)
+  password                    String               @db.VarChar(255)
+  last_login                  DateTime?            @db.DateTime(0)
+  confirmation_token          String?              @unique(map: "UNIQ_AD8A54A9C05FB297") @db.VarChar(180)
+  password_requested_at       DateTime?            @db.DateTime(0)
+  roles                       String               @db.LongText
+  two_factor                  Boolean?
+  phone_number                String?              @db.VarChar(255)
+  request_id                  String?              @db.VarChar(255)
+  login_times                 Int                  @db.SmallInt
+  google_authenticator_secret String?              @db.VarChar(255)
+  two_factor_enabled          Int?                 @default(0) @db.SmallInt
+  backup_codes                String?              @db.LongText
+  admin_user_comment          admin_user_comment[]
+  user_by_admin_log           user_by_admin_log[]
+  user_login                  user_login[]
+}
+
+model admin_user_comment {
+  id            Int        @id @default(autoincrement())
+  admin_user_id Int
+  user_id       Int
+  comment       String?    @db.LongText
+  created_at    DateTime?  @db.DateTime(0)
+  updated_at    DateTime?  @db.DateTime(0)
+  admin_user    admin_user @relation(fields: [admin_user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_B538EE8B6352511C")
+  user          user       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_B538EE8BA76ED395")
+
+  @@index([admin_user_id], map: "IDX_B538EE8B6352511C")
+  @@index([user_id], map: "IDX_B538EE8BA76ED395")
+}
+
+model api_document {
+  id                  Int                   @id @default(autoincrement())
+  ref_code            String                @db.VarChar(30)
+  component_name      String?               @db.VarChar(255)
+  component_key       String?               @db.VarChar(30)
+  component_id        String?               @db.VarChar(30)
+  doc_impact          String?               @db.VarChar(255)
+  file_type           String?               @db.VarChar(30)
+  document_id         String?               @db.VarChar(15)
+  doc_type_id         String?               @db.VarChar(15)
+  file_name           String?               @db.VarChar(255)
+  document_hash       String?               @db.VarChar(255)
+  s3_file_path        String?               @db.VarChar(255)
+  is_trueproof_doc    Int?                  @db.SmallInt
+  ranking             Int?                  @default(0) @db.SmallInt
+  is_converted_image  Boolean?              @default(false)
+  api_document_images api_document_images[]
+
+  @@index([component_key], map: "apidoc_component_key_idx")
+  @@index([ref_code], map: "apidoc_ref_code_idx")
+}
+
+model api_document_images {
+  id              Int          @id @default(autoincrement())
+  api_document_id Int
+  s3_file_path    String       @db.VarChar(500)
+  is_used         Boolean?     @default(true)
+  ranking         Int?         @default(0) @db.SmallInt
+  created_at      DateTime?    @default(now()) @db.DateTime(0)
+  updated_at      DateTime?    @default(now()) @db.DateTime(0)
+  api_document    api_document @relation(fields: [api_document_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_92C75C54A75ED375")
+
+  @@index([api_document_id], map: "IDX_92C75C54A75ED375")
+}
+
+model api_log {
+  id             Int      @id @default(autoincrement())
+  name           String   @db.VarChar(255)
+  body           String?  @db.VarChar(255)
+  response       String?  @db.VarChar(255)
+  response_code  Int?
+  reference_code String?  @db.VarChar(255)
+  status         String?  @db.VarChar(255)
+  created_at     DateTime @db.DateTime(0)
+
+  @@index([name])
+  @@index([reference_code])
+}
+
+model authority {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique(map: "UNIQ_4AF96AFC5E237E06") @db.VarChar(255)
+  conditions      String            @db.VarChar(255)
+  full_name       String?           @db.VarChar(255)
+  position        Int
+  type            Int               @db.SmallInt
+  guideline_url   String?           @db.LongText
+  slug            String?           @db.VarChar(255)
+  authority_lists authority_lists[]
+}
+
+model authority_lists {
+  id               Int         @id @default(autoincrement())
+  user_id          Int?
+  my_reports_id    Int?
+  authority_id     Int?
+  reference_number String?     @db.VarChar(255)
+  created_at       DateTime?   @db.DateTime(0)
+  updated_at       DateTime?   @db.DateTime(0)
+  is_nurse         Boolean?
+  having_applied   Boolean?
+  authority        authority?  @relation(fields: [authority_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_B5AF948C81EC865B")
+  my_reports       my_reports? @relation(fields: [my_reports_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_B5AF948C8BDAAB62")
+  user             user?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_B5AF948CA76ED395")
+
+  @@index([authority_id], map: "IDX_B5AF948C81EC865B")
+  @@index([my_reports_id], map: "IDX_B5AF948C8BDAAB62")
+  @@index([user_id], map: "IDX_B5AF948CA76ED395")
+}
+
+model bundle {
+  id                          Int                           @id @default(autoincrement())
+  uuid                        String                        @unique(map: "UNIQ_A57B32FDD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(255)
+  name                        String?                       @db.VarChar(255)
+  description                 String?                       @db.VarChar(255)
+  price                       Int?
+  includes                    String?                       @db.LongText
+  created_at                  DateTime?                     @db.DateTime(0)
+  forms                       String?                       @db.VarChar(255)
+  picture                     String?                       @db.VarChar(255)
+  map_name                    String?                       @db.VarChar(255)
+  active                      Boolean
+  position                    Int?
+  updated_at                  DateTime?                     @db.DateTime(0)
+  map_package_id              Int?
+  extra_prices                String?                       @db.LongText
+  bundle_type                 bundle_bundle_type?
+  document_data               String?                       @db.LongText
+  map_package                 map_package?                  @relation(fields: [map_package_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_A57B32FDE133EEF1")
+  partner_bundle              partner_bundle[]
+  partner_bundle_request      partner_bundle_request[]
+  verification_request        verification_request[]
+  verification_request_member verification_request_member[]
+
+  @@index([map_package_id], map: "IDX_A57B32FDE133EEF1")
+  @@index([uuid])
+}
+
+model campaign {
+  id         Int       @id @default(autoincrement())
+  uuid       String    @unique(map: "UNIQ_38E91A7BD14F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id    Int?
+  data       String?   @db.LongText
+  had_paid   Boolean?  @default(false)
+  expired_at DateTime? @db.DateTime(0)
+  created_at DateTime  @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+
+  @@index([user_id], map: "user_idx")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model changes_log {
+  id          Int      @id @default(autoincrement())
+  level       String?  @db.VarChar(255)
+  operation   String   @db.VarChar(255)
+  message     String   @db.LongText
+  parameters  String?  @db.LongText
+  operated_by String?  @db.VarChar(255)
+  created_at  DateTime @db.DateTime(0)
+
+  @@index([level], map: "level_idx")
+  @@index([operated_by], map: "operated_by_idx")
+  @@index([operation], map: "operation_idx")
+}
+
+model combine_report {
+  id                          Int                          @id @default(autoincrement())
+  user_id                     Int?
+  uuid                        String                       @unique(map: "UNIQ_37E90A6BD17F50A6") @db.VarChar(36)
+  status                      String                       @db.VarChar(255)
+  report_name                 String?                      @db.VarChar(255)
+  barcode                     String?                      @db.VarChar(255)
+  title                       String?                      @db.VarChar(255)
+  verify_status               String?                      @db.VarChar(15)
+  verified_date               DateTime?                    @db.DateTime(0)
+  report_link                 String?                      @db.VarChar(255)
+  created_at                  DateTime?                    @db.DateTime(0)
+  updated_at                  DateTime?                    @db.DateTime(0)
+  appeal_case                 Boolean                      @default(false)
+  qr_content                  String                       @db.LongText
+  downloaded_at               DateTime?                    @db.DateTime(0)
+  partner_id                  Int?
+  is_published                Boolean?                     @default(false)
+  partner                     partner?                     @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_37E90A6B9393F8FE")
+  user                        user?                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_37E90A6BA76ED395")
+  verification_request_member verification_request_member?
+
+  @@index([partner_id], map: "IDX_37E90A6B9393F8FE")
+  @@index([user_id], map: "IDX_37E90A6BA76ED395")
+  @@index([barcode], map: "idx_ccp_barcode")
+  @@index([verify_status], map: "idx_status")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model contact_request {
+  id                                      Int                     @id @default(autoincrement())
+  user_id                                 Int?
+  partner_id                              Int?
+  status                                  contact_request_status?
+  is_deleted                              Boolean?                @default(false)
+  created_at                              DateTime?               @db.DateTime(0)
+  updated_at                              DateTime?               @db.DateTime(0)
+  expired_at                              DateTime?               @db.DateTime(0)
+  is_sent_mail                            Boolean?                @default(false)
+  is_viewed                               Boolean?                @default(false)
+  applicant_id                            Int?
+  confirmed_at                            DateTime?               @db.DateTime(0)
+  request_count                           Int?
+  query_string                            String?                 @db.Text
+  page_ranking                            Int?
+  late_reply_at                           DateTime?               @db.DateTime(0)
+  partner                                 partner?                @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_A1B8AE1E9393F8FE")
+  user_contact_request_applicant_idTouser user?                   @relation("contact_request_applicant_idTouser", fields: [applicant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_A1B8AE1E97139001")
+  user_contact_request_user_idTouser      user?                   @relation("contact_request_user_idTouser", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_A1B8AE1EA76ED395")
+  recruitment_search                      recruitment_search?
+
+  @@index([partner_id], map: "IDX_A1B8AE1E9393F8FE")
+  @@index([applicant_id], map: "IDX_A1B8AE1E97139001")
+  @@index([user_id], map: "IDX_A1B8AE1EA76ED395")
+}
+
+model contact_setting_history {
+  id         Int                                 @id @default(autoincrement())
+  user_id    Int?
+  updated_at DateTime?                           @db.DateTime(0)
+  created_at DateTime?                           @db.DateTime(0)
+  old_status contact_setting_history_old_status?
+  status     contact_setting_history_status?
+  user       user?                               @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "FK_E4FFFF9DA76ED395")
+
+  @@index([user_id], map: "IDX_E4FFFF9DA76ED395")
+}
+
+model country {
+  id                  Int               @id @default(autoincrement())
+  uuid                String            @unique(map: "UNIQ_5373C966D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  code                String?           @db.VarChar(11)
+  country_name        String?           @db.VarChar(100)
+  country_code        String?           @db.VarChar(100)
+  country_code_alpha2 String?           @db.VarChar(2)
+  landing_partner     landing_partner[]
+  partner             partner[]
+
+  @@index([country_code_alpha2], map: "country_code_alpha2_idx")
+  @@index([code])
+  @@index([uuid], map: "uuid_idx")
+}
+
+model csv_upload_s3 {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  name       String    @default("") @db.VarChar(255)
+  path       String    @default("") @db.VarChar(255)
+  created_at DateTime? @db.DateTime(0)
+}
+
+model currency {
+  id                          Int                           @id @default(autoincrement())
+  name                        String                        @db.VarChar(100)
+  code                        String                        @unique(map: "UNIQ_6956883F77153098") @db.VarChar(3)
+  enabled                     Boolean                       @default(true)
+  created_at                  DateTime?                     @default(now()) @db.DateTime(0)
+  updated_at                  DateTime?                     @default(now()) @db.DateTime(0)
+  partner_token_transaction   partner_token_transaction[]
+  token_pricing               token_pricing[]
+  transaction                 transaction[]
+  verification_request_member verification_request_member[]
+}
+
+model data_elastica {
+  id                               Int       @id @default(autoincrement())
+  first_name                       String?   @db.VarChar(255)
+  last_name                        String?   @db.VarChar(255)
+  gender                           String?   @db.VarChar(5)
+  birthday                         String?   @db.LongText
+  contact_setting                  String?   @db.VarChar(255)
+  specialisation                   String?   @db.LongText
+  professional_industry            String?   @db.VarChar(255)
+  experience                       Int?
+  employment_country               String?   @db.LongText
+  highest_degree                   String?   @db.VarChar(255)
+  residence_country                String?   @db.VarChar(255)
+  avatar                           String?   @db.VarChar(255)
+  last_update                      DateTime? @db.Date
+  nationality                      String?   @db.VarChar(255)
+  has_identification               Int?
+  profession_title                 String?   @db.VarChar(255)
+  premium                          Int?
+  education_qualification_location String?   @db.LongText
+  language                         String?   @db.LongText
+  country_availability             String?   @db.LongText
+  true_proofs                      Int?
+  willing_to_relocate              Boolean?
+  pending_checks                   Int?
+  cv_job_title                     String?   @db.LongText
+  cv_specialization                String?   @db.LongText
+  cv_professional_industry         String?   @db.LongText
+  cv_qualification_attained        String?   @db.LongText
+  cv_license                       String?   @db.LongText
+  sign_up_date                     DateTime? @db.Date
+  experience_months                Int?
+  license_country                  String?   @db.VarChar(255)
+  profession                       String?   @db.LongText
+  specialization                   String?   @db.LongText
+  qualification_level              String?   @db.LongText
+  tp_job_title                     String?   @db.LongText
+  tp_qualification_attained        String?   @db.LongText
+  tp_license                       String?   @db.LongText
+  tp_professional_title            String?   @db.LongText
+  searchable                       Int?
+
+  @@index([searchable], map: "searchable_idx")
+}
+
+model dataflow_status_payment_log {
+  id         Int                               @id @default(autoincrement())
+  barcode    String?                           @db.VarChar(255)
+  type       dataflow_status_payment_log_type?
+  issued_at  DateTime                          @db.DateTime(0)
+  created_at DateTime                          @db.DateTime(0)
+  updated_at DateTime?                         @db.DateTime(0)
+
+  @@index([barcode], map: "dataflow_status_payment_logs_barcode_idx")
+  @@index([type], map: "dataflow_status_payment_logs_type_idx")
+}
+
+model doc_cat {
+  id               Int                @id @default(autoincrement())
+  uuid             String             @unique(map: "UNIQ_37D482D4D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  code             String             @db.VarChar(255)
+  name             String             @db.VarChar(255)
+  doc_info         doc_info[]
+  document         document[]
+  document_product document_product[]
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model doc_info {
+  id                                                           Int           @id @default(autoincrement())
+  uuid                                                         String        @unique(map: "UNIQ_92938681D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                                                      Int?
+  doc_cat_id                                                   Int?
+  created_at                                                   DateTime?     @db.DateTime(0)
+  updated_at                                                   DateTime?     @db.DateTime(0)
+  dynamic_column                                               String?       @db.LongText
+  form_id                                                      Int?
+  user_order_id                                                Int?
+  product_type                                                 String?       @db.VarChar(255)
+  is_active                                                    Boolean       @default(true)
+  verification_id                                              Int?
+  previous_user_order_document                                 Int?
+  verification                                                 verification? @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "doc_info_ibfk_1")
+  doc_cat                                                      doc_cat?      @relation(fields: [doc_cat_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "doc_info_ibfk_2")
+  user_order_doc_info_user_order_idTouser_order                user_order?   @relation("doc_info_user_order_idTouser_order", fields: [user_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "doc_info_ibfk_3")
+  user                                                         user?         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "doc_info_ibfk_4")
+  user_order_doc_info_previous_user_order_documentTouser_order user_order?   @relation("doc_info_previous_user_order_documentTouser_order", fields: [previous_user_order_document], references: [id], onUpdate: Restrict, map: "doc_info_ibfk_5")
+  document                                                     document[]
+  user_case                                                    user_case[]
+
+  @@index([verification_id], map: "IDX_doc_info_temp929386811623CB0A")
+  @@index([doc_cat_id], map: "IDX_doc_info_temp9293868164CAB4EF")
+  @@index([user_order_id], map: "IDX_doc_info_temp929386816D128938")
+  @@index([user_id], map: "IDX_doc_info_temp92938681A76ED395")
+  @@index([previous_user_order_document], map: "IDX_doc_info_temp92938681CB4C39B1")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model doc_type {
+  id               Int        @id @default(autoincrement())
+  uuid             String     @unique(map: "UNIQ_D5C4E0FFD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  code             String     @db.VarChar(255)
+  type             String     @db.VarChar(255)
+  rules            String     @db.VarChar(255)
+  veriflow_code    Int?
+  veriflow_enabled Boolean?   @default(false)
+  document         document[]
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model document {
+  id              Int           @id @default(autoincrement())
+  uuid            String        @unique(map: "UNIQ_D8698A76D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id         Int?
+  doc_type_id     Int?
+  doc_cat_id      Int?
+  name            String        @db.VarChar(255)
+  description     String        @db.VarChar(255)
+  path            String        @db.VarChar(255)
+  status          String        @db.VarChar(255)
+  is_sync         Boolean
+  created_at      DateTime      @db.DateTime(0)
+  verification_id Int?
+  doc_info_id     Int?
+  is_primary      Boolean       @default(false)
+  meta            String?       @db.LongText
+  verification    verification? @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_D8698A761623CB0A")
+  doc_type        doc_type?     @relation(fields: [doc_type_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_D8698A761AAE044D")
+  doc_cat         doc_cat?      @relation(fields: [doc_cat_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_D8698A7664CAB4EF")
+  doc_info        doc_info?     @relation(fields: [doc_info_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_D8698A7682694926")
+  user            user?         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_D8698A76A76ED395")
+
+  @@index([verification_id], map: "IDX_D8698A761623CB0A")
+  @@index([doc_type_id], map: "IDX_D8698A761AAE044D")
+  @@index([doc_cat_id], map: "IDX_D8698A7664CAB4EF")
+  @@index([doc_info_id], map: "IDX_D8698A7682694926")
+  @@index([user_id], map: "IDX_D8698A76A76ED395")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model document_product {
+  id                              Int                               @id @default(autoincrement())
+  uuid                            String                            @unique(map: "UNIQ_7725A271D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name                            String                            @db.VarChar(255)
+  price                           Int
+  created_at                      DateTime                          @db.DateTime(0)
+  forms                           String?                           @db.VarChar(255)
+  position                        Int?
+  active                          Boolean
+  updated_at                      DateTime?                         @db.DateTime(0)
+  picture                         String?                           @db.VarChar(255)
+  map_package_id                  Int?
+  extra_price                     Int
+  alias                           String?                           @db.VarChar(255)
+  code                            String?                           @db.VarChar(255)
+  description                     String?                           @db.LongText
+  skip_tasks                      String?                           @db.VarChar(255)
+  subscription_period             String?                           @db.VarChar(8)
+  doc_cat_id                      Int?
+  url                             String?                           @db.VarChar(255)
+  code_trial                      String?                           @db.VarChar(255)
+  doc_cat                         doc_cat?                          @relation(fields: [doc_cat_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7725A27164CAB4EF")
+  map_package                     map_package?                      @relation(fields: [map_package_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7725A271E133EEF1")
+  single_check                    single_check[]
+  token_partner_document          token_partner_document[]
+  verification                    verification[]
+  verification_request_matching   verification_request_matching[]
+  verification_request_unprovided verification_request_unprovided[]
+
+  @@index([doc_cat_id], map: "IDX_7725A27164CAB4EF")
+  @@index([map_package_id], map: "IDX_7725A271E133EEF1")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model email_history {
+  id            Int      @id @default(autoincrement())
+  user_id       Int
+  operation_key String   @db.VarChar(255)
+  extra_data    String?  @db.LongText
+  created_at    DateTime @db.DateTime(0)
+  user          user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_9A7A1884A76ED395")
+
+  @@unique([user_id, operation_key], map: "idx_unique_email_history_user_id_operation_key")
+  @@index([operation_key], map: "IDX_9A7A188495B1BD95")
+  @@index([user_id], map: "IDX_9A7A1884A76ED395")
+}
+
+model email_schedule {
+  id              Int           @id @default(autoincrement())
+  user_id         Int?
+  message_id      String?       @db.VarChar(255)
+  template        String?       @db.VarChar(255)
+  status          String?       @db.VarChar(255)
+  sent_at         DateTime      @db.DateTime(0)
+  created_at      DateTime      @db.DateTime(0)
+  updated_at      DateTime      @db.DateTime(0)
+  verification_id Int?
+  data            String?       @db.LongText
+  verification    verification? @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_515E0EB21623CB0A")
+  user            user?         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_515E0EB2A76ED395")
+
+  @@index([verification_id], map: "IDX_515E0EB21623CB0A")
+  @@index([user_id], map: "IDX_515E0EB2A76ED395")
+}
+
+model email_template {
+  id               Int     @id @default(autoincrement())
+  name             String  @db.VarChar(100)
+  slug             String  @unique(map: "UNIQ_9C0600CA989D9B62") @db.VarChar(100)
+  subject          String? @db.VarChar(100)
+  from_email       String? @db.VarChar(100)
+  from_name        String? @db.VarChar(100)
+  code             String? @db.Text
+  label            String? @db.VarChar(255)
+  publish          Int?
+  global_variables String  @db.LongText
+  schedule         String? @db.LongText
+  template_id      String? @db.VarChar(255)
+
+  @@index([slug], map: "slug_idx")
+}
+
+model fast_spring_account {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  account_id String   @db.VarChar(255)
+  first_name String   @db.VarChar(255)
+  last_name  String   @db.VarChar(255)
+  email      String   @db.VarChar(255)
+  company    String?  @db.VarChar(255)
+  phone      String?  @db.VarChar(255)
+  country    String   @db.VarChar(255)
+  created_at DateTime @db.DateTime(0)
+  updated_at DateTime @db.DateTime(0)
+  user       user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_96CB86E5A76ED395")
+
+  @@index([account_id], map: "IDX_96CB86E59B6B5FBA")
+  @@index([user_id], map: "IDX_96CB86E5A76ED395")
+  @@index([email], map: "IDX_96CB86E5E7927C74")
+}
+
+model ia_schema {
+  id                  Int       @id @default(autoincrement())
+  new_ia_id           Int?
+  old_rx_id           Int?
+  ia_name             String?   @db.VarChar(255)
+  country             String?   @db.VarChar(255)
+  subdivision         String?   @db.VarChar(255)
+  city                String?   @db.VarChar(255)
+  postal_code         String?   @db.VarChar(255)
+  street_district     String?   @db.Text
+  country_code_alpha3 String?   @db.Char(3)
+  country_code_alpha2 String?   @db.Char(2)
+  country_code        Int?
+  created_at          DateTime? @db.DateTime(0)
+  updated_at          DateTime? @db.DateTime(0)
+}
+
+model identity_type {
+  id    Int    @id @default(autoincrement())
+  uuid  String @unique(map: "UNIQ_2D39EADD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name  String @db.VarChar(150)
+  order Int    @default(1)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model idnow_documents_per_country {
+  id                  Int     @id @default(autoincrement())
+  country_name        String? @db.VarChar(100)
+  country_code_alpha2 String? @db.VarChar(2)
+  passport            String? @db.VarChar(255)
+  id_card             String? @db.VarChar(255)
+  driver_license      String? @db.VarChar(255)
+
+  @@index([country_code_alpha2], map: "idnow_country_code_alpha2_idx")
+}
+
+model idnow_identification {
+  id                  Int           @id @default(autoincrement())
+  user_id             Int?
+  ident_id            String?       @db.VarChar(255)
+  status              String?       @db.VarChar(255)
+  ident_status        String?       @db.VarChar(255)
+  content             String?       @db.LongText
+  transaction_number  String?       @db.VarChar(255)
+  created_at          DateTime?     @db.DateTime(0)
+  updated_at          DateTime?     @db.DateTime(0)
+  identification_time DateTime?     @db.DateTime(0)
+  filename            String?       @db.VarChar(255)
+  type                String?       @db.VarChar(100)
+  result              String?       @db.LongText
+  verification_id     Int?
+  sent_link           Boolean
+  verification        verification? @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_71DAC8B11623CB0A")
+  user                user?         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_71DAC8B1A76ED395")
+
+  @@index([verification_id], map: "IDX_71DAC8B11623CB0A")
+  @@index([user_id], map: "IDX_71DAC8B1A76ED395")
+}
+
+model information {
+  id    Int     @id @default(autoincrement())
+  type  String? @db.VarChar(255)
+  name  String? @db.VarChar(255)
+  value String? @db.VarChar(10000)
+
+  @@unique([type, name], map: "information_type_name_idx")
+}
+
+model ip_tracking {
+  id              Int       @id @default(autoincrement())
+  ip_address      String    @unique(map: "UNIQ_D6E2AF1B22FFD58C") @db.VarChar(255)
+  attempt         Int?
+  isLocked        Boolean
+  isLockedForever Boolean
+  device          String    @db.VarChar(255)
+  created_at      DateTime? @db.DateTime(0)
+  updated_at      DateTime? @db.DateTime(0)
+}
+
+model json_schema_form_default {
+  id               Int                           @id @default(autoincrement())
+  type             json_schema_form_default_type
+  json_type        Int?                          @default(1)
+  json_schema_form String                        @db.LongText
+  created_at       DateTime?                     @default(now()) @db.DateTime(0)
+  updated_at       DateTime?                     @default(now()) @db.DateTime(0)
+}
+
+model landing_page {
+  id           Int                @id @default(autoincrement())
+  uuid         String             @unique(map: "UNIQ_87A7C899D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  partner_id   Int?
+  name         String             @unique(map: "UNIQ_87A7C8995E237E06") @db.VarChar(255)
+  title        String?            @db.VarChar(255)
+  image        String?            @db.VarChar(255)
+  partnerLogo  String?            @db.VarChar(255)
+  url          String?            @db.VarChar(255)
+  product_id   Int?
+  product_type String?            @db.VarChar(255)
+  is_active    Boolean
+  active_from  DateTime           @db.DateTime(0)
+  active_to    DateTime?          @db.DateTime(0)
+  updated_at   DateTime?          @db.DateTime(0)
+  created_at   DateTime?          @db.DateTime(0)
+  sub_title    String?            @db.VarChar(255)
+  type         landing_page_type?
+  template_id  Int                @default(2)
+  partner      partner?           @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_87A7C8999393F8FE")
+
+  @@index([partner_id], map: "IDX_87A7C8999393F8FE")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model landing_partner {
+  id                               Int       @id @default(autoincrement())
+  first_name                       String    @db.VarChar(100)
+  last_name                        String    @db.VarChar(100)
+  company                          String    @db.VarChar(255)
+  company_email                    String    @db.VarChar(100)
+  phone_number                     String?   @db.VarChar(100)
+  job_title                        String?   @db.VarChar(100)
+  company_size                     String?   @db.VarChar(100)
+  company_industry                 String?   @db.VarChar(100)
+  comments                         String?   @db.LongText
+  news_letter                      Boolean?
+  terms                            Boolean
+  created_at                       DateTime? @db.DateTime(0)
+  country                          Int?
+  country_countryTolanding_partner country?  @relation(fields: [country], references: [id], onUpdate: Restrict, map: "FK_E27F70375373C966")
+
+  @@index([country], map: "IDX_E27F70375373C966")
+}
+
+model map_package {
+  id                  Int                @id @default(autoincrement())
+  sub_category_id     Int
+  customer_package_id Int
+  default_name        String             @db.VarChar(150)
+  type                String             @db.VarChar(50)
+  env                 String             @db.VarChar(50)
+  express_package_id  Int?
+  client_name         String?            @db.VarChar(100)
+  bundle              bundle[]
+  document_product    document_product[]
+}
+
+model marital {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique(map: "UNIQ_1A83929BD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name String @db.VarChar(150)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model messenger_messages {
+  id           BigInt    @id @default(autoincrement())
+  body         String    @db.LongText
+  headers      String    @db.LongText
+  queue_name   String    @db.VarChar(255)
+  created_at   DateTime  @db.DateTime(0)
+  available_at DateTime  @db.DateTime(0)
+  delivered_at DateTime? @db.DateTime(0)
+
+  @@index([delivered_at], map: "IDX_75EA56E016BA31DB")
+  @@index([available_at], map: "IDX_75EA56E0E3BD61CE")
+  @@index([queue_name], map: "IDX_75EA56E0FB7336F0")
+}
+
+model migration_versions {
+  version     String    @id @db.VarChar(14)
+  executed_at DateTime? @db.DateTime(0)
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String @db.VarChar(255)
+  batch     Int
+}
+
+model my_reports {
+  id                              Int               @id @default(autoincrement())
+  uuid                            String            @unique(map: "UNIQ_7BE60B69D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                         Int?
+  user_case                       Int?
+  status                          String            @db.VarChar(255)
+  report_name                     String?           @db.VarChar(255)
+  title                           String?           @db.VarChar(255)
+  verify_status                   String?           @db.VarChar(23)
+  verified_date                   DateTime?         @db.DateTime(0)
+  report_link                     String?           @db.VarChar(255)
+  created_at                      DateTime?         @db.DateTime(0)
+  updated_at                      DateTime?         @db.DateTime(0)
+  verification_id                 Int?
+  blockchain_entry                String?           @db.VarChar(255)
+  tx_hash                         String?           @db.VarChar(255)
+  notarization_id                 String?           @db.VarChar(255)
+  data_hash                       String?           @db.VarChar(255)
+  appeal_case                     Boolean           @default(false)
+  crn_number                      String?           @db.VarChar(255)
+  is_downloaded                   Boolean           @default(false)
+  downloaded_at                   DateTime?         @db.DateTime(0)
+  downloadable_ends_at            DateTime?         @db.DateTime(0)
+  is_error_file                   Boolean           @default(false)
+  notified_at                     DateTime?         @db.DateTime(0)
+  verification                    verification?     @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7BE60B691623CB0A")
+  user_case_my_reportsTouser_case user_case?        @relation(fields: [user_case], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7BE60B69289D5CD")
+  user                            user?             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7BE60B69A76ED395")
+  authority_lists                 authority_lists[]
+  single_check                    single_check[]
+
+  @@index([verification_id], map: "IDX_7BE60B691623CB0A")
+  @@index([user_case], map: "IDX_7BE60B69289D5CD")
+  @@index([user_id], map: "IDX_7BE60B69A76ED395")
+  @@index([verify_status], map: "idx_status")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model my_trueprofile_meta {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?      @unique(map: "UNIQ_F923FD9DA76ED395")
+  criteria   Int
+  updated_at DateTime? @db.DateTime(0)
+  user       user?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_F923FD9DA76ED395")
+}
+
+model nationality {
+  id                  Int     @id @default(autoincrement())
+  uuid                String  @unique(map: "UNIQ_8AC58B70D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name                String? @db.VarChar(100)
+  currency_name       String? @db.VarChar(100)
+  currency_code       String? @db.VarChar(100)
+  nationality_code    String? @db.VarChar(16)
+  country_code_alpha2 String? @db.VarChar(2)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model oauth_access_tokens {
+  id         String    @id @db.VarChar(100)
+  user_id    BigInt?   @db.UnsignedBigInt
+  client_id  String    @db.Char(36)
+  name       String?   @db.VarChar(255)
+  scopes     String?   @db.Text
+  revoked    Boolean
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+  expires_at DateTime? @db.DateTime(0)
+
+  @@index([user_id], map: "oauth_access_tokens_user_id_index")
+}
+
+model oauth_auth_codes {
+  id         String    @id @db.VarChar(100)
+  user_id    BigInt    @db.UnsignedBigInt
+  client_id  String    @db.Char(36)
+  scopes     String?   @db.Text
+  revoked    Boolean
+  expires_at DateTime? @db.DateTime(0)
+
+  @@index([user_id], map: "oauth_auth_codes_user_id_index")
+}
+
+model oauth_clients {
+  id                     String    @id @db.Char(36)
+  user_id                BigInt?   @db.UnsignedBigInt
+  name                   String    @db.VarChar(255)
+  secret                 String?   @db.VarChar(100)
+  provider               String?   @db.VarChar(255)
+  redirect               String    @db.Text
+  personal_access_client Boolean
+  password_client        Boolean
+  revoked                Boolean
+  created_at             DateTime? @db.Timestamp(0)
+  updated_at             DateTime? @db.Timestamp(0)
+
+  @@index([user_id], map: "oauth_clients_user_id_index")
+}
+
+model oauth_personal_access_clients {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  client_id  String    @db.Char(36)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model oauth_refresh_tokens {
+  id              String    @id @db.VarChar(100)
+  access_token_id String    @db.VarChar(100)
+  revoked         Boolean
+  expires_at      DateTime? @db.DateTime(0)
+
+  @@index([access_token_id], map: "oauth_refresh_tokens_access_token_id_index")
+}
+
+model partner {
+  id                            Int                             @id @default(autoincrement())
+  uuid                          String                          @unique(map: "UNIQ_312B3E16D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  country                       Int?
+  name                          String                          @unique(map: "UNIQ_312B3E165E237E06") @db.VarChar(255)
+  contact_person                String?                         @db.VarChar(255)
+  partner_code                  String                          @unique(map: "UNIQ_312B3E1627210380") @db.VarChar(255)
+  address1                      String?                         @db.VarChar(500)
+  address2                      String?                         @db.VarChar(500)
+  zip_code                      String?                         @db.VarChar(100)
+  country_code                  Int?
+  city                          String?                         @db.VarChar(100)
+  phone_number                  String?                         @db.VarChar(255)
+  email                         String                          @unique(map: "UNIQ_312B3E16E7927C74") @db.VarChar(255)
+  active                        Boolean
+  login_times                   Int                             @db.SmallInt
+  logo                          String?                         @db.VarChar(255)
+  updated_at                    DateTime?                       @db.DateTime(0)
+  created_at                    DateTime?                       @db.DateTime(0)
+  link                          String?                         @db.VarChar(255)
+  is_approved                   Boolean
+  approved_at                   DateTime?                       @db.DateTime(0)
+  cross_check_component         Boolean
+  express                       Boolean
+  connect_code                  String?                         @unique(map: "UNIQ_312B3E16E24E7472") @db.VarChar(255)
+  recruitment_access            Boolean
+  recruitment_subscription      Boolean
+  contact_request_credit        Int?
+  contact_request_bonus         Int?
+  contact_request_message       String?                         @db.LongText
+  contact_request_used          Int?
+  notification_setting          String                          @default("[]") @db.LongText
+  recruitment_terms_accepted_at DateTime?                       @db.DateTime(0)
+  business_requirement          String?                         @db.LongText
+  residency_check               Boolean
+  allow_negative_token          Boolean
+  description                   String?                         @db.LongText
+  combine_report_check          Boolean
+  country_countryTopartner      country?                        @relation(fields: [country], references: [id], onUpdate: Restrict, map: "FK_312B3E165373C966")
+  combine_report                combine_report[]
+  contact_request               contact_request[]
+  landing_page                  landing_page[]
+  partner_access_credit_history partner_access_credit_history[]
+  partner_bundle                partner_bundle[]
+  partner_bundle_request        partner_bundle_request[]
+  partner_token                 partner_token[]
+  partner_token_transaction     partner_token_transaction[]
+  recruitment_agency_applicant  recruitment_agency_applicant[]
+  recruitment_search            recruitment_search[]
+  recruitment_search_history    recruitment_search_history[]
+  token_partner_document        token_partner_document[]
+  token_pricing                 token_pricing?
+  user                          user[]
+  verification_request          verification_request[]
+  verification_request_matching verification_request_matching[]
+  verification_request_member   verification_request_member[]
+  verification_request_session  verification_request_session[]
+  voucher                       voucher[]
+  voucher_user                  voucher_user[]
+
+  @@index([country], map: "IDX_312B3E165373C966")
+  @@index([partner_code], map: "partner_code_idx")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model partner_access_credit_history {
+  id          Int       @id @default(autoincrement())
+  partner_id  Int?
+  bonus       Int
+  used        Int
+  exceed      Int
+  period      String    @db.VarChar(10)
+  exceeded_At DateTime? @db.DateTime(0)
+  updated_at  DateTime? @db.DateTime(0)
+  created_at  DateTime? @db.DateTime(0)
+  amount      Int
+  partner     partner?  @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_69E4D5049393F8FE")
+
+  @@unique([partner_id, period], map: "UNIQ_69E4D5049393F8FEC5B81ECE")
+  @@index([partner_id], map: "IDX_69E4D5049393F8FE")
+}
+
+model partner_bundle {
+  id                               Int                                @id @default(autoincrement())
+  uuid                             String                             @db.VarChar(36)
+  partner_id                       Int?
+  bundle_id                        Int?
+  email_description                String?                            @db.LongText
+  payment_mode                     partner_bundle_payment_mode?
+  alias_number                     Int?
+  created_at                       DateTime                           @db.DateTime(0)
+  updated_at                       DateTime?                          @db.DateTime(0)
+  is_migrate                       Boolean                            @default(false)
+  display_order                    Int                                @default(0)
+  partner                          partner?                           @relation(fields: [partner_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_98B09B869393F8FE")
+  bundle                           bundle?                            @relation(fields: [bundle_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_98B09B86F1FAD9D3")
+  verification_request_member      verification_request_member[]
+  verification_request_session     verification_request_session[]
+  verification_request_tmp_session verification_request_tmp_session[]
+
+  @@unique([partner_id, alias_number], map: "UNIQ_98B09B869393F8FE2416E970")
+  @@unique([partner_id, bundle_id, payment_mode], map: "UNIQ_98B09B869393F8FEF1FAD9D3B649D0DF")
+  @@index([bundle_id], map: "FK_98B09B86F1FAD9D3")
+}
+
+model partner_bundle_request {
+  id                Int      @id @default(autoincrement())
+  partner_id        Int?
+  bundle_id         Int?
+  remain            Int
+  used              Int
+  discount          Int
+  email_description String?  @db.LongText
+  partner           partner? @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_39D7E8E29393F8FE")
+  bundle            bundle?  @relation(fields: [bundle_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_39D7E8E2F1FAD9D3")
+
+  @@unique([partner_id, bundle_id], map: "UNIQ_CCF8BFDD9393F8FEF1FAD9D3")
+  @@index([partner_id], map: "IDX_CCF8BFDD9393F8FE")
+  @@index([bundle_id], map: "IDX_CCF8BFDDF1FAD9D3")
+}
+
+model partner_token {
+  id         Int       @id @default(autoincrement())
+  uuid       String    @db.VarChar(36)
+  partner_id Int
+  amount     Int
+  created_at DateTime  @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  partner    partner   @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_9F2843249393F8FE")
+
+  @@index([partner_id], map: "FK_9F2843249393F8FE")
+}
+
+model partner_token_transaction {
+  id                                 Int                              @id @default(autoincrement())
+  uuid                               String                           @db.VarChar(36)
+  partner_id                         Int
+  verification_request_session_id    Int?
+  transaction_id                     Int?                             @unique(map: "UNIQ_F21278DE2FC0CB0F")
+  verification_request_member_id     Int?
+  amount                             Int
+  currency_id                        Int?                             @default(1)
+  type                               String                           @db.VarChar(12)
+  description                        String                           @db.LongText
+  created_at                         DateTime                         @db.DateTime(0)
+  verification_request_unprovided_id Int?
+  verification_request_matching_id   Int?
+  partner                            partner                          @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_31B1E68D9393F8FE")
+  verification_request_session       verification_request_session?    @relation(fields: [verification_request_session_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_31B1E68DB69FBC11")
+  transaction                        transaction?                     @relation(fields: [transaction_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_F21278DE2FC0CB0F")
+  currency                           currency?                        @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "FK_F21278DE38248176")
+  verification_request_unprovided    verification_request_unprovided? @relation(fields: [verification_request_unprovided_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_F21278DE8A366227")
+  verification_request_matching      verification_request_matching?   @relation(fields: [verification_request_matching_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_F21278DECF93395F")
+  verification_request_member        verification_request_member?     @relation(fields: [verification_request_member_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_F21278DED815F31F")
+
+  @@index([partner_id], map: "FK_31B1E68D9393F8FE")
+  @@index([verification_request_session_id], map: "FK_31B1E68DB69FBC11")
+  @@index([currency_id], map: "FK_F21278DE38248176")
+  @@index([verification_request_unprovided_id], map: "FK_F21278DE8A366227")
+  @@index([verification_request_matching_id], map: "FK_F21278DECF93395F")
+  @@index([verification_request_member_id], map: "IDX_F21278DED815F31F")
+}
+
+model password_history {
+  id         Int       @id @default(autoincrement())
+  user_id    Int?
+  password   String?   @db.VarChar(255)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  user       user?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_F352144A76ED395")
+
+  @@index([user_id], map: "IDX_F352144A76ED395")
+}
+
+model payment_method {
+  id                           Int      @id @default(autoincrement())
+  user_id                      Int
+  stripe_payment_method_id     String   @unique(map: "UNIQ_7B61A1F62D13D9D5") @db.VarChar(255)
+  billing_address_city         String?  @db.VarChar(255)
+  billing_address_country      String?  @db.VarChar(255)
+  billing_address_line_one     String?  @db.VarChar(255)
+  billing_address_postal_code  String?  @db.VarChar(255)
+  billing_address_state        String?  @db.VarChar(255)
+  billing_email                String?  @db.VarChar(255)
+  billing_name                 String?  @db.VarChar(255)
+  billing_phone                String?  @db.VarChar(255)
+  card_brand                   String   @db.VarChar(255)
+  card_country                 String?  @db.VarChar(255)
+  card_exp_month               Int
+  card_exp_year                Int
+  card_last_four               String   @db.VarChar(255)
+  card_fingerprint             String   @db.VarChar(255)
+  card_funding                 String   @db.VarChar(255)
+  card_three_dsecure_supported String?  @db.VarChar(255)
+  created_at                   DateTime @db.DateTime(0)
+  updated_at                   DateTime @db.DateTime(0)
+  user                         user     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_7B61A1F6A76ED395")
+
+  @@index([user_id], map: "IDX_7B61A1F6A76ED395")
+  @@index([billing_email], map: "idx_payment_method_billing_email")
+  @@index([card_fingerprint], map: "idx_payment_method_card_fingerprint")
+  @@index([card_last_four], map: "idx_payment_method_card_last_four")
+  @@index([stripe_payment_method_id], map: "idx_payment_method_stripe_payment_method_id")
+}
+
+model phone_type {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique(map: "UNIQ_6FDA053BD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name String @db.VarChar(150)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model profile_share_link {
+  id         Int                            @id @default(autoincrement())
+  user_id    Int?
+  token      String?                        @db.VarChar(32)
+  permission profile_share_link_permission?
+  created_at DateTime?                      @db.DateTime(0)
+  updated_at DateTime?                      @db.DateTime(0)
+  user       user?                          @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_4C00A335A76ED395")
+
+  @@index([user_id], map: "IDX_4C00A335A76ED395")
+  @@index([permission], map: "profile_share_link_permission")
+  @@index([token])
+}
+
+model recruitment_agency_applicant {
+  id           Int      @id @default(autoincrement())
+  applicant_id Int      @unique(map: "UNIQ_BEBE23C897139001")
+  partner_id   Int?
+  uuid         String   @unique(map: "UNIQ_BEBE23C8D17F50A6") @db.VarChar(36)
+  lp_url       String?  @db.VarChar(255)
+  is_sent_mail Boolean  @default(false)
+  created_at   DateTime @db.DateTime(0)
+  updated_at   DateTime @db.DateTime(0)
+  partner      partner? @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_BEBE23C89393F8FE")
+  user         user     @relation(fields: [applicant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_BEBE23C897139001")
+
+  @@index([applicant_id], map: "applicant_id")
+  @@index([is_sent_mail], map: "is_sent_mail")
+  @@index([partner_id], map: "partner_id")
+  @@index([uuid], map: "uuid")
+}
+
+model recruitment_info {
+  id                               Int                                      @id @default(autoincrement())
+  uuid                             String                                   @unique(map: "UNIQ_A99138D3D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                          Int?                                     @unique(map: "idx_unique_recruitment_info_user_id")
+  currently_unemployed             Int?                                     @db.TinyInt
+  country_name                     String?                                  @db.VarChar(100)
+  country_code                     String?                                  @db.VarChar(11)
+  job_title                        String?                                  @db.VarChar(255)
+  company                          String?                                  @db.VarChar(255)
+  professional_industry            String?                                  @db.VarChar(60)
+  career_length_year               Int?
+  expertise_skill                  String?                                  @db.LongText
+  language                         String?                                  @db.LongText
+  countries_willing_move           String?                                  @db.LongText
+  willing_to_relocate              Int?                                     @default(-1) @db.SmallInt
+  created_at                       DateTime?                                @db.DateTime(0)
+  updated_at                       DateTime?                                @db.DateTime(0)
+  contacted_by_recruiter           recruitment_info_contacted_by_recruiter?
+  level_education                  String?                                  @db.VarChar(255)
+  specialisation                   String?                                  @db.VarChar(255)
+  career_length_month              Int?
+  company_website                  String?                                  @db.VarChar(255)
+  contactable_at                   DateTime?                                @db.DateTime(0)
+  updated_by_cron_job_at           DateTime?                                @db.DateTime(0)
+  expired_contact_request_count    Int?                                     @default(0) @db.SmallInt
+  first_expired_contact_request_at DateTime?                                @db.DateTime(0)
+  current_salary                   Int?
+  expected_salary                  Int?
+  data_update_campaign_status      Int?                                     @default(0) @db.SmallInt
+  user                             user?                                    @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_A99138D3A76ED395")
+
+  @@index([user_id], map: "IDX_A99138D3A76ED395")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model recruitment_search {
+  id                                         Int              @id @default(autoincrement())
+  user_id                                    Int
+  applicant_id                               Int
+  comment                                    String?          @db.LongText
+  is_bookmarked                              Boolean          @default(false)
+  is_archived                                Boolean          @default(false)
+  created_at                                 DateTime         @db.DateTime(0)
+  updated_at                                 DateTime         @db.DateTime(0)
+  contact_request_id                         Int?             @unique(map: "UNIQ_92C35C5485C7E132")
+  bookmarked_at                              DateTime?        @db.DateTime(0)
+  archived_at                                DateTime?        @db.DateTime(0)
+  partner_id                                 Int
+  contact_request                            contact_request? @relation(fields: [contact_request_id], references: [id], onUpdate: Restrict, map: "FK_92C35C5485C7E132")
+  partner                                    partner          @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_92C35C549393F8FE")
+  user_recruitment_search_applicant_idTouser user             @relation("recruitment_search_applicant_idTouser", fields: [applicant_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_92C35C5497139001")
+  user_recruitment_search_user_idTouser      user             @relation("recruitment_search_user_idTouser", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_92C35C54A76ED395")
+
+  @@index([partner_id], map: "IDX_92C35C549393F8FE")
+  @@index([applicant_id], map: "applicant_id")
+  @@index([is_archived], map: "is_archived")
+  @@index([is_bookmarked], map: "is_bookmarked")
+  @@index([user_id], map: "user_id")
+}
+
+model recruitment_search_history {
+  id           Int       @id @default(autoincrement())
+  user_id      Int?
+  partner_id   Int?
+  query_string String?   @db.VarChar(255)
+  advance      String?   @db.LongText
+  created_at   DateTime? @db.DateTime(0)
+  updated_at   DateTime? @db.DateTime(0)
+  result       Int?
+  extra_data   String?   @db.LongText
+  partner      partner?  @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_5A51F7A39393F8FE")
+  user         user?     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_5A51F7A3A76ED395")
+
+  @@index([partner_id], map: "IDX_5A51F7A39393F8FE")
+  @@index([user_id], map: "IDX_5A51F7A3A76ED395")
+}
+
+model recruitment_search_keyword_mapping {
+  id             Int     @id @default(autoincrement())
+  keyword        String  @unique(map: "UNIQ_2602CF53BA930D69") @db.VarChar(255)
+  profession     String? @db.VarChar(255)
+  specialization String? @db.VarChar(255)
+  search_as      String? @db.VarChar(255)
+
+  @@index([profession], map: "recruitment_search_profession_tp_name_idx")
+  @@index([specialization], map: "recruitment_search_specialization_tp_name_idx")
+}
+
+model religion {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique(map: "UNIQ_1055F4F9D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name String @db.VarChar(150)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model sessions {
+  id            String  @id @db.VarChar(255)
+  user_id       BigInt? @db.UnsignedBigInt
+  ip_address    String? @db.VarChar(45)
+  user_agent    String? @db.Text
+  payload       String  @db.Text
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
+}
+
+model settings {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique(map: "UNIQ_E545A0C55E237E06") @db.VarChar(255)
+  value     String  @db.LongText
+  is_locked Boolean
+  type      String? @db.VarChar(255)
+}
+
+model share_link {
+  id                        Int                         @id @default(autoincrement())
+  user_id                   Int?
+  single_check_id           Int?
+  token                     String?                     @db.VarChar(255)
+  url                       String?                     @db.VarChar(255)
+  permission                share_link_permission?
+  created_at                DateTime?                   @db.DateTime(0)
+  updated_at                DateTime?                   @db.DateTime(0)
+  single_check              single_check?               @relation(fields: [single_check_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_8B6B94689FFC8FD0")
+  user                      user?                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_8B6B9468A76ED395")
+  true_proof_access_request true_proof_access_request[]
+
+  @@index([single_check_id], map: "IDX_8B6B94689FFC8FD0")
+  @@index([user_id], map: "IDX_8B6B9468A76ED395")
+  @@index([permission], map: "share_link_permission")
+  @@index([token])
+}
+
+model single_check {
+  id                            Int                             @id @default(autoincrement())
+  uuid                          String                          @unique(map: "UNIQ_AD0AD2E2D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  report_id                     Int?
+  user_id                       Int?
+  is_duplicated                 Boolean?                        @default(false)
+  duplicated_original_id        Int?
+  owner_info                    String                          @db.LongText
+  component_name                String                          @db.VarChar(255)
+  component_info                String                          @db.LongText
+  verifier_info                 String                          @db.LongText
+  qr_code                       String?                         @db.VarChar(255)
+  file_info                     String                          @db.LongText
+  created_date                  DateTime                        @db.DateTime(0)
+  updated_at                    DateTime                        @db.DateTime(0)
+  page_number                   Int?
+  latest_data_hash              String?                         @db.VarChar(255)
+  user_case_id                  Int?
+  case_id                       Int?
+  barcode                       String?                         @db.VarChar(255)
+  verify_status                 String?                         @db.VarChar(23)
+  generated_true_proof          Boolean?
+  document_product_id           Int?
+  true_proof_type               String?                         @db.VarChar(255)
+  is_shared                     Boolean
+  trueproof_hash                String?                         @db.VarChar(255)
+  tx_added_at                   DateTime?                       @db.DateTime(0)
+  tx_hash                       String?                         @db.VarChar(255)
+  is_block_chain_valid          Boolean
+  revoke_tx_hash                String?                         @db.VarChar(255)
+  component_key                 String?                         @db.VarChar(15)
+  json_hash                     String?                         @db.VarChar(255)
+  tx_json_hash                  String?                         @db.VarChar(255)
+  is_json_block_chain_valid     Boolean
+  revoke_tx_json_hash           String?                         @db.VarChar(255)
+  json_salt                     String                          @db.LongText
+  redact_setting_limit          String                          @db.LongText
+  uport_callback_id             String?                         @unique(map: "UNIQ_AD0AD2E211B2FA1F") @db.VarChar(31)
+  uport_added_at                DateTime?                       @db.DateTime(0)
+  uport_client_pushed_at        DateTime?                       @db.DateTime(0)
+  verification_detail           String?                         @db.MediumText
+  my_reports                    my_reports?                     @relation(fields: [report_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_AD0AD2E24BD2A4C0")
+  single_check                  single_check?                   @relation("single_checkTosingle_check", fields: [duplicated_original_id], references: [id], onUpdate: Restrict, map: "FK_AD0AD2E280599006")
+  user_case                     user_case?                      @relation(fields: [user_case_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_AD0AD2E2971DCAFF")
+  user                          user?                           @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_AD0AD2E2A76ED395")
+  document_product              document_product?               @relation(fields: [document_product_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_AD0AD2E2E447CD0C")
+  share_link                    share_link[]
+  other_single_check            single_check[]                  @relation("single_checkTosingle_check")
+  true_proof                    true_proof?
+  true_proof_access_request     true_proof_access_request[]
+  verification_request_matching verification_request_matching[]
+
+  @@index([barcode], map: "IDX_92C35C549393F4DF")
+  @@index([report_id], map: "IDX_AD0AD2E24BD2A4C0")
+  @@index([duplicated_original_id], map: "IDX_AD0AD2E280599006")
+  @@index([user_case_id], map: "IDX_AD0AD2E2971DCAFF")
+  @@index([user_id], map: "IDX_AD0AD2E2A76ED395")
+  @@index([document_product_id], map: "IDX_AD0AD2E2E447CD0C")
+  @@index([component_key], map: "componentkey_sc_idx")
+  @@index([id, user_case_id, created_date], map: "idx_id_user_case_created_date")
+  @@index([is_duplicated], map: "is_duplicated_sc_idx")
+  @@index([trueproof_hash], map: "trueproofhash_idx")
+  @@index([true_proof_type], map: "trueprooftype_sc_idx")
+  @@index([uuid], map: "uuid_idx")
+  @@index([verify_status], map: "verify_status_sc_idx")
+}
+
+model subscription_invoices {
+  id                         Int                           @id @default(autoincrement())
+  user_id                    Int?
+  subscription_id            Int?
+  stripe_invoice_id          String?                       @unique(map: "UNIQ_D8170B952875775") @db.VarChar(255)
+  amount                     Int?
+  created_at                 DateTime?                     @db.DateTime(0)
+  updated_at                 DateTime?                     @db.DateTime(0)
+  is_extended                Boolean?
+  deleted_at                 DateTime?                     @db.DateTime(0)
+  notified_at                DateTime?                     @db.DateTime(0)
+  finalized_at               DateTime?                     @db.DateTime(0)
+  status                     subscription_invoices_status?
+  tax                        Int?                          @default(0)
+  subscriptions              subscriptions?                @relation(fields: [subscription_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_D8170B99A1887DC")
+  user                       user?                         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_D8170B9A76ED395")
+  subscription_invoices_meta subscription_invoices_meta?
+
+  @@index([stripe_invoice_id], map: "IDX_D8170B952875775")
+  @@index([subscription_id], map: "IDX_D8170B99A1887DC")
+  @@index([user_id], map: "IDX_D8170B9A76ED395")
+}
+
+model subscription_invoices_meta {
+  id                      Int                    @id @default(autoincrement())
+  subscription_invoice_id Int?                   @unique(map: "UNIQ_A966A12DEB6CB198")
+  failed_reason           String?                @db.VarChar(64)
+  card_country            String?                @db.VarChar(4)
+  card_brand              String?                @db.VarChar(32)
+  card_exp_month          Int?
+  card_exp_year           Int?
+  card_funding            String?                @db.VarChar(10)
+  card_last4              String?                @db.VarChar(4)
+  card_address_line1      String?                @db.VarChar(255)
+  card_address_zip        String?                @db.VarChar(255)
+  card_cvc_status         String?                @db.VarChar(255)
+  card_avs_zip_status     String?                @db.VarChar(255)
+  card_avs_line1_status   String?                @db.VarChar(255)
+  payment_source_type     String?                @db.VarChar(255)
+  subscription_invoices   subscription_invoices? @relation(fields: [subscription_invoice_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_A966A12DEB6CB198")
+}
+
+model subscriptions {
+  id                     Int                     @id @default(autoincrement())
+  user_id                Int?
+  name                   String?                 @db.VarChar(255)
+  stripe_subscription_id String?                 @unique(map: "UNIQ_4778A01B5DBB761") @db.VarChar(255)
+  stripe_plan            String?                 @db.VarChar(255)
+  quantity               Int?
+  created_at             DateTime?               @db.DateTime(0)
+  updated_at             DateTime?               @db.DateTime(0)
+  trial_ends_at          DateTime?               @db.DateTime(0)
+  ends_at                DateTime?               @db.DateTime(0)
+  cancelled_at           DateTime?               @db.DateTime(0)
+  ip                     String?                 @db.VarChar(50)
+  user                   user?                   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_4778A01A76ED395")
+  subscription_invoices  subscription_invoices[]
+
+  @@index([user_id], map: "IDX_4778A01A76ED395")
+  @@index([ip], map: "ip_idx")
+}
+
+model sunil_data {
+  id                               Int       @id @default(autoincrement()) @db.UnsignedInt
+  user_id                          Int       @db.UnsignedInt
+  profession                       String?   @db.Text
+  specialization                   String?   @db.Text
+  nationality                      String?   @db.VarChar(255)
+  license_country                  String?   @db.Text
+  country_availability             String?   @db.Text
+  candidate_location               String?   @db.Text
+  employment_country               String?   @db.Text
+  education_qualification_location String?   @db.Text
+  qualification_level              String?   @db.Text
+  cv_data                          String?   @db.Text
+  languages                        String?   @db.Text
+  education_qualification          String?   @db.Text
+  last_update                      DateTime? @db.Date
+
+  @@index([user_id], map: "user_idx")
+}
+
+model sunil_data_log {
+  id            Int       @id @default(autoincrement()) @db.UnsignedInt
+  total_records Int?      @default(0)
+  created_at    DateTime? @db.DateTime(0)
+}
+
+model tasks {
+  id                Int    @id @default(autoincrement())
+  name              String @db.VarChar(255)
+  key               String @db.VarChar(255)
+  priority          Int
+  percent           Int
+  message_next_step String @db.VarChar(255)
+  title             String @db.VarChar(255)
+  parent_id         Int
+}
+
+model tmp_barcode {
+  id      Int    @id @default(autoincrement())
+  barcode String @db.VarChar(30)
+
+  @@index([barcode], map: "tmp_barcode_idx")
+}
+
+model token_partner_document {
+  id                  Int              @id @default(autoincrement())
+  partner_id          Int?
+  document_product_id Int
+  token_amount        Int
+  created_at          DateTime         @db.DateTime(0)
+  updated_at          DateTime?        @db.DateTime(0)
+  partner             partner?         @relation(fields: [partner_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_6EE7C4499393F8FE")
+  document_product    document_product @relation(fields: [document_product_id], references: [id], onUpdate: Restrict, map: "FK_6EE7C449E447CD0C")
+
+  @@unique([partner_id, document_product_id], map: "UNIQ_6EE7C4499393F8FEE447CD0C")
+  @@index([document_product_id], map: "FK_6EE7C449E447CD0C")
+}
+
+model token_pricing {
+  id          Int       @id @default(autoincrement())
+  partner_id  Int?      @unique(map: "UNIQ_D8DDFBCA9393F8FE")
+  amount      Float
+  currency_id Int?      @default(1)
+  created_at  DateTime? @db.DateTime(0)
+  updated_at  DateTime? @db.DateTime(0)
+  currency    currency? @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "FK_4C0B0D5E75386476")
+  partner     partner?  @relation(fields: [partner_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_D8DDFBCA9393F8FE")
+
+  @@index([currency_id], map: "FK_4C0B0D5E75386476")
+}
+
+model transaction {
+  id                             Int                          @id @default(autoincrement())
+  uuid                           String                       @unique(map: "UNIQ_723705D1D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                        Int?
+  transaction_id                 String?                      @db.VarChar(255)
+  refno                          String?                      @db.VarChar(255)
+  method                         String?                      @db.VarChar(255)
+  status                         String?                      @db.VarChar(255)
+  message                        String?                      @db.VarChar(255)
+  digest                         String?                      @db.VarChar(255)
+  created_at                     DateTime?                    @db.DateTime(0)
+  updated_at                     DateTime?                    @db.DateTime(0)
+  real_amount                    String?                      @db.VarChar(255)
+  amount                         String?                      @db.VarChar(255)
+  currency_id                    Int?                         @default(1)
+  refund_link                    String?                      @db.VarChar(255)
+  voucher_user_id                Int?
+  invoice_number                 Int?
+  ip                             String?                      @db.VarChar(50)
+  notified_at                    DateTime?                    @db.DateTime(0)
+  verification_request_member_id Int?
+  currency                       currency?                    @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "FK_4C0B0D5E82937476")
+  verification_request_member    verification_request_member? @relation(fields: [verification_request_member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_723705D11623CB0A")
+  voucher_user                   voucher_user?                @relation(fields: [voucher_user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_723705D164A3F992")
+  user                           user?                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_723705D1A76ED395")
+  partner_token_transaction      partner_token_transaction?
+  transaction_order              transaction_order[]
+
+  @@index([currency_id], map: "FK_4C0B0D5E82937476")
+  @@index([verification_request_member_id], map: "FK_723705D11623CB0A")
+  @@index([voucher_user_id], map: "IDX_723705D164A3F992")
+  @@index([user_id], map: "IDX_723705D1A76ED395")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model transaction_order {
+  id             Int          @id @default(autoincrement())
+  user_id        Int?
+  transaction_id Int?
+  user_order_id  Int?
+  created_at     DateTime?    @db.DateTime(0)
+  updated_at     DateTime?    @db.DateTime(0)
+  transaction    transaction? @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_541A43D82FC0CB0F")
+  user_order     user_order?  @relation(fields: [user_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_541A43D86D128938")
+  user           user?        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_541A43D8A76ED395")
+
+  @@index([transaction_id], map: "IDX_541A43D82FC0CB0F")
+  @@index([user_order_id], map: "IDX_541A43D86D128938")
+  @@index([user_id], map: "IDX_541A43D8A76ED395")
+}
+
+model true_proof {
+  id              Int           @id @default(autoincrement())
+  single_check_id Int?          @unique(map: "UNIQ_3F4057939FFC8FD0")
+  type            String        @db.VarChar(15)
+  component_key   String        @db.VarChar(30)
+  title           String?       @db.VarChar(255)
+  subtitle        String?       @db.VarChar(255)
+  number          String?       @db.VarChar(100)
+  date_from       String?       @db.VarChar(100)
+  country         String?       @db.VarChar(100)
+  info            String        @db.LongText
+  created_at      DateTime?     @db.DateTime(0)
+  updated_at      DateTime?     @db.DateTime(0)
+  date_to         String?       @db.VarChar(100)
+  remark          String?       @db.LongText
+  single_check    single_check? @relation(fields: [single_check_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_3F4057939FFC8FD0")
+
+  @@index([type], map: "type_sc_idx")
+}
+
+model true_proof_access_request {
+  id                Int           @id @default(autoincrement())
+  requester_company String        @db.VarChar(255)
+  requester_email   String        @db.VarChar(255)
+  requester_name    String        @db.VarChar(255)
+  closed_counter    Int
+  single_check_id   Int?
+  user_id           Int?
+  created_at        DateTime      @db.DateTime(0)
+  updated_at        DateTime      @db.DateTime(0)
+  share_link_id     Int?
+  single_check      single_check? @relation(fields: [single_check_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_ADA5540B9FFC8FD0")
+  user              user?         @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_ADA5540BA76ED395")
+  share_link        share_link?   @relation(fields: [share_link_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_ADA5540BEFC8A8ED")
+
+  @@index([single_check_id], map: "IDX_ADA5540B9FFC8FD0")
+  @@index([user_id], map: "IDX_ADA5540BA76ED395")
+  @@index([share_link_id], map: "IDX_ADA5540BEFC8A8ED")
+}
+
+model true_proof_education_master {
+  id                  Int     @id @default(autoincrement())
+  value               String  @unique(map: "UNIQ_EDUCATIONVALUE") @db.VarChar(255)
+  profession          String? @db.VarChar(255)
+  specialization      String? @db.VarChar(255)
+  qualification_level String? @db.VarChar(255)
+}
+
+model true_proof_mapping_detail {
+  id              Int     @id @default(autoincrement())
+  value           String  @default("") @db.VarChar(255)
+  mapping_detail  String? @db.VarChar(255)
+  mapping_key     String? @db.VarChar(255)
+  display_field   String? @db.VarChar(255)
+  true_proof_type String  @default("") @db.VarChar(255)
+  index           String? @db.VarChar(255)
+
+  @@unique([value, true_proof_type], map: "UNIQUE_VALUETYPE")
+  @@index([mapping_key])
+  @@index([true_proof_type])
+}
+
+model true_proof_master {
+  id                  Int     @id @default(autoincrement())
+  value               String  @unique(map: "UNIQ_EDUCATIONVALUE") @db.VarChar(255)
+  profession          String? @db.VarChar(255)
+  specialization      String? @db.VarChar(255)
+  qualification_level String? @db.VarChar(255)
+}
+
+model true_proof_name {
+  id                       Int     @id @default(autoincrement())
+  name                     String  @db.VarChar(255)
+  search_name              String? @db.VarChar(255)
+  standardized_name        String  @db.VarChar(255)
+  search_standardized_name String? @db.VarChar(255)
+
+  @@index([search_name], map: "search_name_tp_name_idx")
+  @@index([search_standardized_name], map: "search_standardized_name_tp_name_idx")
+}
+
+model user {
+  id                                                                Int                                @id @default(autoincrement())
+  uuid                                                              String                             @unique(map: "UNIQ_8D93D649D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(255)
+  password                                                          String?                            @db.VarChar(255)
+  email                                                             String                             @db.VarChar(255)
+  status                                                            Int                                @db.SmallInt
+  linkedin_id                                                       String?                            @db.VarChar(25)
+  facebook_id                                                       String?                            @db.VarChar(25)
+  expiry_time                                                       Int?
+  is_active                                                         Boolean
+  created_at                                                        DateTime?                          @db.DateTime(0)
+  updated_at                                                        DateTime?                          @db.DateTime(0)
+  confirm_code                                                      String?                            @db.VarChar(255)
+  facebook_profile_url                                              String?                            @db.Text
+  percent                                                           Int?
+  form_current                                                      String?                            @db.VarChar(255)
+  confirmed_at                                                      DateTime?                          @db.DateTime(0)
+  linkedin_profile_url                                              String?                            @db.Text
+  email_linkedin                                                    String?                            @db.VarChar(255)
+  email_facebook                                                    String?                            @db.VarChar(255)
+  facebook_avatar                                                   String?                            @db.Text
+  linkedin_avatar                                                   String?                            @db.Text
+  is_set_password                                                   Boolean
+  changed_email_at                                                  DateTime?                          @db.DateTime(0)
+  old_email                                                         String?                            @db.VarChar(255)
+  is_delete                                                         Boolean
+  login_times                                                       Int                                @db.SmallInt
+  schedule                                                          Int?
+  is_survey                                                         Boolean
+  is_reset_password                                                 Boolean
+  is_new_user                                                       Boolean                            @default(true)
+  is_schedule                                                       Boolean
+  form_next_step                                                    String?                            @db.LongText
+  partner_id                                                        Int?
+  roles                                                             String?                            @db.LongText
+  partner_api_key                                                   String?                            @unique(map: "UNIQ_8D93D649EF88E80") @db.VarChar(50)
+  partner_api_flag                                                  Boolean                            @default(false)
+  delete_by                                                         Int?
+  added_by                                                          String?                            @db.VarChar(100)
+  slug                                                              String?                            @unique(map: "UNIQ_8D93D649989D9B62") @db.VarChar(255)
+  is_shared                                                         Boolean
+  full_name                                                         String?                            @db.VarChar(255)
+  new_terms_accepted_at                                             DateTime?                          @db.DateTime(0)
+  google_id                                                         String?                            @db.VarChar(25)
+  google_profile_url                                                String?                            @db.Text
+  email_google                                                      String?                            @db.VarChar(255)
+  google_avatar                                                     String?                            @db.Text
+  onboarding_token                                                  String?                            @unique(map: "UNIQ_8D93D64962A5CCD7") @db.VarChar(255)
+  is_force_payment                                                  Boolean
+  subscribed_at                                                     DateTime?                          @db.DateTime(0)
+  premium_expired_at                                                DateTime?                          @db.DateTime(0)
+  is_df_client                                                      Boolean
+  is_trial                                                          Boolean
+  stripe_id                                                         String?                            @db.VarChar(255)
+  is_confirmed_identity                                             Boolean
+  login_token                                                       String?                            @unique(map: "UNIQ_8D93D649594766AF") @db.VarChar(255)
+  login_token_expired_at                                            DateTime?                          @db.DateTime(0)
+  notified_at                                                       DateTime?                          @db.DateTime(0)
+  type                                                              user_type?
+  initial_type                                                      user_initial_type?
+  erased_hash_email                                                 String?                            @db.VarChar(255)
+  deleted_user_at                                                   DateTime?                          @db.DateTime(0)
+  erased_user_at                                                    DateTime?                          @db.DateTime(0)
+  erase_data_status                                                 user_erase_data_status?
+  updated_erasure_status_at                                         DateTime?                          @db.DateTime(0)
+  source                                                            String?                            @db.VarChar(255)
+  cross_check_component                                             Boolean
+  enable_merge_reports                                              Boolean
+  master_account_id                                                 Int?
+  true_identity                                                     Boolean?
+  identity_checked                                                  Boolean                            @default(false)
+  secondary_email                                                   String?                            @db.VarChar(255)
+  recruiter_bypass_quick_access                                     Boolean
+  redirection_confirmed_at                                          DateTime?                          @db.DateTime(0)
+  searchable                                                        Boolean
+  recruitment_tasks                                                 String?                            @db.LongText
+  is_test_user                                                      Boolean                            @default(false)
+  contact_setting_status                                            Int?                               @default(0) @db.SmallInt
+  redirect_url                                                      String?                            @db.VarChar(512)
+  two_factor_secret                                                 String?                            @db.Text
+  two_factor_recovery_codes                                         String?                            @db.Text
+  two_factor_confirmed                                              Boolean                            @default(false)
+  frontend_meta                                                     String?                            @db.VarChar(5000)
+  user                                                              user?                              @relation("userTouser", fields: [master_account_id], references: [id], onUpdate: Restrict, map: "FK_8D93D6499375FD34")
+  partner                                                           partner?                           @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_8D93D6499393F8FE")
+  admin_user_comment                                                admin_user_comment[]
+  authority_lists                                                   authority_lists[]
+  combine_report                                                    combine_report[]
+  contact_request_contact_request_applicant_idTouser                contact_request[]                  @relation("contact_request_applicant_idTouser")
+  contact_request_contact_request_user_idTouser                     contact_request[]                  @relation("contact_request_user_idTouser")
+  contact_setting_history                                           contact_setting_history[]
+  doc_info                                                          doc_info[]
+  document                                                          document[]
+  email_history                                                     email_history[]
+  email_schedule                                                    email_schedule[]
+  fast_spring_account                                               fast_spring_account[]
+  idnow_identification                                              idnow_identification[]
+  my_reports                                                        my_reports[]
+  my_trueprofile_meta                                               my_trueprofile_meta?
+  password_history                                                  password_history[]
+  payment_method                                                    payment_method[]
+  profile_share_link                                                profile_share_link[]
+  recruitment_agency_applicant                                      recruitment_agency_applicant?
+  recruitment_info                                                  recruitment_info?
+  recruitment_search_recruitment_search_applicant_idTouser          recruitment_search[]               @relation("recruitment_search_applicant_idTouser")
+  recruitment_search_recruitment_search_user_idTouser               recruitment_search[]               @relation("recruitment_search_user_idTouser")
+  recruitment_search_history                                        recruitment_search_history[]
+  share_link                                                        share_link[]
+  single_check                                                      single_check[]
+  subscription_invoices                                             subscription_invoices[]
+  subscriptions                                                     subscriptions[]
+  transaction                                                       transaction[]
+  transaction_order                                                 transaction_order[]
+  true_proof_access_request                                         true_proof_access_request[]
+  other_user                                                        user[]                             @relation("userTouser")
+  user_by_admin_log                                                 user_by_admin_log[]
+  user_case                                                         user_case[]
+  user_client_request_log                                           user_client_request_log[]
+  user_detail                                                       user_detail?
+  user_log                                                          user_log[]
+  user_login                                                        user_login[]
+  user_order                                                        user_order[]
+  verification                                                      verification[]
+  verification_request_userToverification_request_partner_member_id verification_request[]             @relation("userToverification_request_partner_member_id")
+  verification_request_userToverification_request_user_id           verification_request[]             @relation("userToverification_request_user_id")
+  verification_request_matching                                     verification_request_matching[]
+  verification_request_member                                       verification_request_member[]
+  verification_request_session                                      verification_request_session[]
+  verification_request_tmp_session                                  verification_request_tmp_session[]
+  verification_request_unprovided                                   verification_request_unprovided[]
+  voucher_user                                                      voucher_user[]
+
+  @@index([master_account_id], map: "IDX_8D93D6499375FD34")
+  @@index([partner_id], map: "IDX_8D93D6499393F8FE")
+  @@index([confirm_code], map: "confirm_code_idx_user")
+  @@index([created_at], map: "created_at_idx")
+  @@index([email_facebook], map: "email_facebook_idx_user")
+  @@index([email_google], map: "email_google_idx_user")
+  @@index([email], map: "email_idx_user")
+  @@index([email_linkedin], map: "email_linkedin_idx_user")
+  @@index([erased_hash_email], map: "erased_hash_email_idx_user")
+  @@index([facebook_id], map: "facebook_id_idx_user")
+  @@index([google_id], map: "google_id_idx_user")
+  @@index([linkedin_id], map: "linkedin_id_idx_user")
+  @@index([partner_api_key], map: "partner_api_key_idx_user")
+  @@index([source], map: "source_idx_user")
+  @@index([stripe_id], map: "stripe_idx_user")
+  @@index([type], map: "type_idx_user")
+  @@index([is_delete], map: "user_is_delete_IDX")
+  @@index([uuid], map: "uuid_idx_user")
+}
+
+model user23_case {
+  id            Int      @id @default(autoincrement())
+  barcode       String   @unique(map: "idx_unique_user23case_barcode") @db.VarChar(255)
+  sub_barcode   String?  @db.VarChar(255)
+  content       String   @db.LongText
+  system        String   @db.VarChar(255)
+  created_at    DateTime @db.DateTime(0)
+  request_count Int?     @default(0)
+
+  @@index([barcode], map: "idx_user23_case_barcode")
+  @@index([system], map: "idx_user23_case_system")
+}
+
+model user_activations {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @unique(map: "user_activations_user_id_unique") @db.UnsignedBigInt
+  token      String    @db.VarChar(255)
+  activated  Int       @default(0) @db.TinyInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model user_by_admin_log {
+  id         Int         @id @default(autoincrement())
+  user_id    Int?
+  admin_id   Int?
+  action     String      @db.VarChar(255)
+  method     String      @db.VarChar(10)
+  created_at DateTime?   @db.DateTime(0)
+  updated_at DateTime?   @db.DateTime(0)
+  admin_user admin_user? @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_ED31D657642B8210")
+  user       user?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_ED31D657A76ED395")
+
+  @@index([admin_id], map: "IDX_ED31D657642B8210")
+  @@index([user_id], map: "IDX_ED31D657A76ED395")
+}
+
+model user_case {
+  id                            Int                             @id @default(autoincrement())
+  uuid                          String                          @unique(map: "UNIQ_289D5CDD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                       Int?
+  case_id                       Int?
+  created_at                    DateTime                        @db.DateTime(0)
+  updated_at                    DateTime                        @db.DateTime(0)
+  order_id                      Int?
+  content                       String?                         @db.MediumText
+  last_sent_email               DateTime?                       @db.DateTime(0)
+  barcode                       String?                         @db.VarChar(255)
+  status                        String?                         @db.VarChar(255)
+  is_queued                     Int?
+  verification_id               Int?
+  case_data_status              String?                         @db.VarChar(255)
+  checked_true_proof            Boolean?                        @default(false)
+  checked_true_proof_at         DateTime?                       @db.DateTime(0)
+  appealed_barcode              String?                         @db.VarChar(50)
+  doc_type                      String?                         @db.VarChar(255)
+  doc_info_id                   Int?
+  df_case_type                  Int?                            @db.SmallInt
+  is_approved                   Boolean
+  api_activated_at              DateTime?                       @db.DateTime(0)
+  is_data_correction            Boolean                         @default(false)
+  data_correction_from_barcode  String?                         @db.VarChar(50)
+  is_no_true_proof              Boolean?                        @default(false)
+  send_email_true_proof_done_at DateTime?                       @db.DateTime(0)
+  is_pure_report_transfer       Boolean                         @default(false)
+  kinesis_notified_at           DateTime?                       @db.DateTime(0)
+  passport                      String?                         @db.VarChar(100)
+  service                       user_case_service?              @default(VERIFLOW)
+  old_barcode                   String?                         @db.VarChar(255)
+  notified_partner_at           DateTime?                       @db.DateTime(0)
+  case_user_info                String?                         @db.LongText
+  verification                  verification?                   @relation(fields: [verification_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_289D5CD1623CB0A")
+  doc_info                      doc_info?                       @relation(fields: [doc_info_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_289D5CD82694926")
+  user_order                    user_order?                     @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_289D5CD8D9F6D38")
+  user                          user?                           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_289D5CDA76ED395")
+  my_reports                    my_reports[]
+  single_check                  single_check[]
+  verification_request_matching verification_request_matching[]
+  veriflow_log                  veriflow_log[]
+
+  @@index([verification_id], map: "IDX_289D5CD1623CB0A")
+  @@index([doc_info_id], map: "IDX_289D5CD82694926")
+  @@index([order_id], map: "IDX_289D5CD8D9F6D38")
+  @@index([user_id], map: "IDX_289D5CDA76ED395")
+  @@index([created_at], map: "created_at_idx")
+  @@index([case_id], map: "idx_case_id")
+  @@index([appealed_barcode], map: "idx_user_case_appealed_barcode")
+  @@index([barcode], map: "idx_user_case_barcode")
+  @@index([data_correction_from_barcode], map: "idx_user_case_data_correction_from_barcode")
+  @@index([is_data_correction], map: "idx_user_case_is_data_correction")
+  @@index([is_pure_report_transfer], map: "idx_user_case_is_pure_report_transfer")
+  @@index([old_barcode], map: "idx_user_case_old_barcode")
+  @@index([df_case_type], map: "user_case_df_case_type_IDX")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model user_client_request_log {
+  id           Int       @id @default(autoincrement())
+  user_id      Int
+  request_type Int
+  response     String    @db.LongText
+  created_at   DateTime? @default(now()) @db.DateTime(0)
+  user         user      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_9A7A1884A76ED279")
+
+  @@index([user_id], map: "IDX_9A7A1884A76ED279")
+}
+
+model user_detail {
+  id                       Int                @id @default(autoincrement())
+  uuid                     String             @unique(map: "UNIQ_4B5464AED17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                  Int?               @unique(map: "UNIQ_4B5464AEA76ED395")
+  first_name               String?            @db.VarChar(100)
+  last_name                String?            @db.VarChar(100)
+  picture_url              String?            @db.Text
+  gender                   String             @db.VarChar(1)
+  title                    user_detail_title?
+  news_letter              Boolean?
+  terms                    Boolean?
+  task_done                String?            @db.VarChar(255)
+  middle_name              String?            @db.VarChar(100)
+  first_name_arabic        String?            @db.VarChar(100)
+  last_name_arabic         String?            @db.VarChar(100)
+  alias_name               String?            @db.VarChar(200)
+  marital_status           Int
+  maiden_name              String?            @db.VarChar(100)
+  birthday                 String             @db.VarChar(255)
+  place_of_birth           String             @db.VarChar(100)
+  country_of_birth         String?            @db.VarChar(3)
+  nationality              String?            @db.VarChar(3)
+  previous_nationality     Int?
+  religion                 Int
+  passport_number_current  String             @db.VarChar(100)
+  passport_number_old      String?            @db.VarChar(100)
+  identity_type            Int?
+  identity_number          String?            @db.VarChar(100)
+  visa_type                Int?
+  mailing_address          String             @db.VarChar(500)
+  city                     String             @db.VarChar(255)
+  state                    String             @db.VarChar(255)
+  country                  Int
+  zip_code                 String?            @db.VarChar(100)
+  landmark                 String?            @db.VarChar(500)
+  phone_type               Int
+  country_code             Int
+  phone_number             String?            @db.VarChar(50)
+  email_id_pro             String?            @db.VarChar(254)
+  identity_other           String?            @db.VarChar(100)
+  visa_other               String?            @db.VarChar(100)
+  city_code                String?            @db.VarChar(100)
+  marital_other            String?            @db.VarChar(100)
+  religion_other           String?            @db.VarChar(100)
+  is_checkout_reminder     Boolean
+  is_skip_ed               Boolean
+  about                    String?            @db.LongText
+  profession               String?            @db.VarChar(255)
+  avatar_name              String?            @db.VarChar(255)
+  avatar_path              String?            @db.VarChar(255)
+  post_nominal_letter      String             @db.VarChar(255)
+  personal_id_number       String?            @db.VarChar(255)
+  uport_callback_id        String?            @unique(map: "UNIQ_4B5464AE11B2FA1F") @db.VarChar(31)
+  uport_session            String?            @db.LongText
+  uport_session_exp_at     DateTime?          @db.DateTime(0)
+  uport_request_url        String?            @db.VarChar(2047)
+  uport_request_url_exp_at DateTime?          @db.DateTime(0)
+  secondary_phone_number   String?            @db.VarChar(50)
+  created_at               DateTime?          @db.DateTime(0)
+  updated_at               DateTime?          @db.DateTime(0)
+  blur_avatar_path         String?            @db.VarChar(255)
+  user                     user?              @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_4B5464AEA76ED395")
+
+  @@index([country], map: "country_idx")
+  @@index([country_of_birth], map: "country_of_birth_idx")
+  @@index([email_id_pro], map: "email_id_pro_idx")
+  @@index([first_name], map: "first_name_idx")
+  @@index([last_name], map: "last_name_idx")
+  @@index([nationality], map: "nationality_idx")
+  @@index([passport_number_current], map: "passport_number_current_idx")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model user_erased {
+  id         Int      @id @default(autoincrement())
+  email_hash String   @db.VarChar(255)
+  barcodes   String?  @db.LongText
+  erased_at  DateTime @db.DateTime(0)
+}
+
+model user_log {
+  id           Int      @id @default(autoincrement())
+  user_id      Int?
+  social       String?  @db.VarChar(50)
+  platform     String   @db.VarChar(255)
+  browser      String   @db.VarChar(255)
+  version      String   @db.VarChar(255)
+  org_as       String   @db.VarChar(255)
+  city         String   @db.VarChar(255)
+  country      String   @db.VarChar(255)
+  country_code String   @db.VarChar(255)
+  isp          String   @db.VarChar(255)
+  lat          String   @db.VarChar(255)
+  lon          String   @db.VarChar(255)
+  org          String   @db.VarChar(255)
+  ip           String   @db.VarChar(255)
+  region       String   @db.VarChar(255)
+  region_name  String   @db.VarChar(255)
+  timezone     String   @db.VarChar(255)
+  zip          String   @db.VarChar(255)
+  created_at   DateTime @db.DateTime(0)
+  user         user?    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_6429094EA76ED395")
+
+  @@index([user_id], map: "IDX_6429094EA76ED395")
+  @@index([created_at], map: "created_at_idx")
+}
+
+model user_login {
+  id             Int         @id @default(autoincrement())
+  user_id        Int?
+  api_token      String?     @db.VarChar(355)
+  access_token   String?     @db.VarChar(355)
+  device_id      String      @db.VarChar(255)
+  created_at     DateTime?   @db.DateTime(0)
+  updated_at     DateTime?   @db.DateTime(0)
+  admin_id       Int?
+  last_access_at DateTime?   @db.DateTime(0)
+  admin_user     admin_user? @relation(fields: [admin_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_48CA3048642B8210")
+  user           user?       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_48CA3048A76ED395")
+
+  @@index([admin_id], map: "IDX_48CA3048642B8210")
+  @@index([user_id], map: "IDX_48CA3048A76ED395")
+}
+
+model user_order {
+  id                                                         Int                             @id @default(autoincrement())
+  uuid                                                       String                          @unique(map: "UNIQ_17EB68C0D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                                                    Int?
+  order_id                                                   Int
+  order_type                                                 String                          @db.VarChar(255)
+  quantity                                                   Int                             @default(1)
+  status                                                     Int
+  created_at                                                 DateTime?                       @db.DateTime(0)
+  updated_at                                                 DateTime?                       @db.DateTime(0)
+  is_active                                                  Boolean                         @default(true)
+  has_verifications                                          Boolean                         @default(true)
+  voucher_user_id                                            Int?
+  voucher_user                                               voucher_user?                   @relation(fields: [voucher_user_id], references: [id], onUpdate: Restrict, map: "FK_17EB68C064A3F992")
+  user                                                       user?                           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_17EB68C0A76ED395")
+  doc_info_doc_info_user_order_idTouser_order                doc_info[]                      @relation("doc_info_user_order_idTouser_order")
+  doc_info_doc_info_previous_user_order_documentTouser_order doc_info[]                      @relation("doc_info_previous_user_order_documentTouser_order")
+  transaction_order                                          transaction_order[]
+  user_case                                                  user_case[]
+  verification                                               verification[]
+  verification_request_matching                              verification_request_matching[]
+
+  @@index([voucher_user_id], map: "IDX_17EB68C064A3F992")
+  @@index([user_id], map: "IDX_17EB68C0A76ED395")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model user_pro_case {
+  id         Int       @id @default(autoincrement())
+  email      String?   @db.VarChar(255)
+  barcode    String?   @db.VarChar(255)
+  passport   String?   @db.VarChar(255)
+  created_at DateTime? @db.DateTime(0)
+  updated_at DateTime? @db.DateTime(0)
+  is_PRO     Boolean?  @default(false)
+
+  @@index([email, is_PRO], map: "email")
+  @@index([email], map: "email_idx_user_pro")
+  @@index([barcode], map: "idx_user_pro_barcode")
+  @@index([passport], map: "idx_user_pro_passport")
+}
+
+model verification {
+  id                            Int                             @id @default(autoincrement())
+  uuid                          String                          @unique(map: "UNIQ_5AF1C50BD17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  user_id                       Int?
+  percent                       Int?
+  form_current                  String?                         @db.VarChar(255)
+  created_at                    DateTime?                       @db.DateTime(0)
+  updated_at                    DateTime?                       @db.DateTime(0)
+  is_draft                      Boolean?                        @default(false)
+  task_done                     String?                         @db.VarChar(255)
+  form_next_step                String?                         @db.LongText
+  data                          String?                         @db.LongText
+  code                          String?                         @db.VarChar(10)
+  document_product_id           Int?
+  user_order_id                 Int?
+  retail_price                  Int?
+  deleted_at                    DateTime?                       @db.DateTime(0)
+  trial_expired_at              DateTime?                       @db.DateTime(0)
+  user_order                    user_order?                     @relation(fields: [user_order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_5AF1C50B6D128938")
+  user                          user?                           @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_5AF1C50BA76ED395")
+  document_product              document_product?               @relation(fields: [document_product_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_5AF1C50BE447CD0C")
+  doc_info                      doc_info[]
+  document                      document[]
+  email_schedule                email_schedule[]
+  idnow_identification          idnow_identification[]
+  my_reports                    my_reports[]
+  user_case                     user_case[]
+  verification_request_matching verification_request_matching[]
+  voucher_user                  voucher_user?
+
+  @@index([user_order_id], map: "IDX_5AF1C50B6D128938")
+  @@index([user_id], map: "IDX_5AF1C50BA76ED395")
+  @@index([document_product_id], map: "IDX_5AF1C50BE447CD0C")
+  @@index([code], map: "code_idx")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model verification_request {
+  id                                                Int       @id @default(autoincrement())
+  uuid                                              String    @unique(map: "UNIQ_30FF031CD17F50A6") @db.VarChar(255)
+  partner_id                                        Int?
+  partner_member_id                                 Int?
+  user_id                                           Int?
+  voucher_id                                        Int?      @unique(map: "UNIQ_30FF031C28AA1B6F")
+  bundle_id                                         Int?
+  email                                             String    @db.VarChar(255)
+  gender                                            Int       @db.SmallInt
+  first_name                                        String    @db.VarChar(100)
+  middle_name                                       String?   @db.VarChar(100)
+  last_name                                         String?   @db.VarChar(100)
+  is_accepted                                       Int       @db.SmallInt
+  comment                                           String?   @db.VarChar(255)
+  status                                            Int       @db.SmallInt
+  created_at                                        DateTime? @db.DateTime(0)
+  updated_at                                        DateTime? @db.DateTime(0)
+  user_userToverification_request_partner_member_id user?     @relation("userToverification_request_partner_member_id", fields: [partner_member_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_20FDDF4E7E3C61F9")
+  partner                                           partner?  @relation(fields: [partner_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_20FDDF4E9393F8FE")
+  voucher                                           voucher?  @relation(fields: [voucher_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_30FF031C28AA1B6F")
+  user_userToverification_request_user_id           user?     @relation("userToverification_request_user_id", fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_30FF031CA76ED395")
+  bundle                                            bundle?   @relation(fields: [bundle_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_30FF031CF1FAD9D3")
+
+  @@index([partner_member_id], map: "IDX_20FDDF4E7E3C61F9")
+  @@index([partner_id], map: "IDX_20FDDF4E9393F8FE")
+  @@index([user_id], map: "IDX_30FF031CA76ED395")
+  @@index([bundle_id], map: "IDX_30FF031CF1FAD9D3")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model verification_request_matching {
+  id                             Int                          @id @default(autoincrement())
+  verification_request_member_id Int?
+  user_id                        Int?
+  partner_id                     Int?
+  document_product_id            Int?
+  verification_id                Int?
+  single_check_id                Int?
+  user_case_id                   Int?
+  user_order_id                  Int?
+  created_at                     DateTime                     @db.DateTime(0)
+  updated_at                     DateTime?                    @db.DateTime(0)
+  user_order                     user_order?                  @relation(fields: [user_order_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_39B855E36D128938")
+  document_product               document_product?            @relation(fields: [document_product_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_39B855E3E447CD0C")
+  verification                   verification?                @relation(fields: [verification_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EAB1623CB0A")
+  partner                        partner?                     @relation(fields: [partner_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EAB9393F8FE")
+  user_case                      user_case?                   @relation(fields: [user_case_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EAB971DCAFF")
+  single_check                   single_check?                @relation(fields: [single_check_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EAB9FFC8FD0")
+  user                           user?                        @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EABA76ED395")
+  verification_request_member    verification_request_member? @relation(fields: [verification_request_member_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_FA188EABD815F31F")
+  partner_token_transaction      partner_token_transaction[]
+
+  @@index([user_order_id], map: "FK_39B855E36D128938")
+  @@index([verification_id], map: "FK_FA188EAB1623CB0A")
+  @@index([partner_id], map: "FK_FA188EAB9393F8FE")
+  @@index([user_case_id], map: "FK_FA188EAB971DCAFF")
+  @@index([single_check_id], map: "FK_FA188EAB9FFC8FD0")
+  @@index([user_id], map: "FK_FA188EABA76ED395")
+  @@index([verification_request_member_id], map: "FK_FA188EABD815F31F")
+  @@index([document_product_id], map: "IDX_39B855E3E447CD0C")
+}
+
+model verification_request_member {
+  id                              Int                                         @id @default(autoincrement())
+  uuid                            String                                      @db.VarChar(36)
+  verification_request_session_id Int?
+  partner_id                      Int
+  bundle_id                       Int
+  partner_bundle_id               Int?
+  user_id                         Int?
+  email                           String                                      @db.VarChar(255)
+  first_name                      String                                      @db.VarChar(100)
+  middle_name                     String?                                     @db.VarChar(100)
+  last_name                       String?                                     @db.VarChar(100)
+  gender                          Int?                                        @db.SmallInt
+  comment                         String?                                     @db.VarChar(255)
+  token_price                     Decimal                                     @db.Decimal(7, 2)
+  token_amount                    Int                                         @db.UnsignedInt
+  currency_id                     Int?                                        @default(1)
+  total_price                     Decimal?                                    @db.Decimal(7, 2)
+  document_data                   String                                      @db.LongText
+  request_status                  verification_request_member_request_status?
+  process_status                  verification_request_member_process_status?
+  is_archive                      Boolean                                     @default(false)
+  accepted_at                     DateTime?                                   @db.DateTime(0)
+  completed_at                    DateTime?                                   @db.DateTime(0)
+  expired_at                      DateTime?                                   @db.DateTime(0)
+  canceled_at                     DateTime?                                   @db.DateTime(0)
+  dismissed_at                    DateTime?                                   @db.DateTime(0)
+  resend_at                       DateTime?                                   @db.DateTime(0)
+  archived_at                     DateTime?                                   @db.DateTime(0)
+  receive_result_at               DateTime?                                   @db.DateTime(0)
+  created_at                      DateTime                                    @db.DateTime(0)
+  updated_at                      DateTime?                                   @db.DateTime(0)
+  migrate_voucher_user_id         Int?                                        @unique(map: "UNIQ_6E1D86F7147BE0F")
+  callback_url                    String?                                     @db.VarChar(500)
+  proactive                       Boolean?                                    @default(false)
+  combine_report_id               Int?                                        @unique(map: "UNIQ_6E1D86F71FA5390")
+  combine_report_check            Boolean                                     @default(false)
+  currency                        currency?                                   @relation(fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: Restrict, map: "FK_5D82105D38248176")
+  voucher_user                    voucher_user?                               @relation(fields: [migrate_voucher_user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_6E1D86F7147BE0F")
+  combine_report                  combine_report?                             @relation(fields: [combine_report_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_6E1D86F71FA5390")
+  partner_bundle                  partner_bundle?                             @relation(fields: [partner_bundle_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_6E1D86F7DA2D42C7")
+  partner                         partner                                     @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_E83CF5809393F8FE")
+  user                            user?                                       @relation(fields: [user_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_E83CF580A76ED395")
+  verification_request_session    verification_request_session?               @relation(fields: [verification_request_session_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_E83CF580B69FBC11")
+  bundle                          bundle                                      @relation(fields: [bundle_id], references: [id], onUpdate: Restrict, map: "FK_E83CF580F1FAD9D3")
+  partner_token_transaction       partner_token_transaction[]
+  transaction                     transaction[]
+  verification_request_matching   verification_request_matching[]
+  verification_request_unprovided verification_request_unprovided[]
+
+  @@index([currency_id], map: "FK_5D82105D38248176")
+  @@index([partner_id], map: "FK_E83CF5809393F8FE")
+  @@index([user_id], map: "FK_E83CF580A76ED395")
+  @@index([verification_request_session_id], map: "FK_E83CF580B69FBC11")
+  @@index([bundle_id], map: "FK_E83CF580F1FAD9D3")
+  @@index([partner_bundle_id], map: "IDX_6E1D86F7DA2D42C7")
+}
+
+model verification_request_session {
+  id                              Int                               @id @default(autoincrement())
+  uuid                            String                            @db.VarChar(36)
+  partner_bundle_id               Int
+  partner_member_id               Int
+  partner_id                      Int?
+  total_member                    Int
+  sent_at                         DateTime?                         @db.DateTime(0)
+  created_at                      DateTime                          @db.DateTime(0)
+  updated_at                      DateTime?                         @db.DateTime(0)
+  user                            user                              @relation(fields: [partner_member_id], references: [id], onUpdate: Restrict, map: "FK_63BA77F55E4048EA")
+  partner                         partner?                          @relation(fields: [partner_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_63BA77F59393F8FE")
+  partner_bundle                  partner_bundle                    @relation(fields: [partner_bundle_id], references: [id], onUpdate: Restrict, map: "FK_63BA77F5DA2D42C7")
+  partner_token_transaction       partner_token_transaction[]
+  verification_request_member     verification_request_member[]
+  verification_request_unprovided verification_request_unprovided[]
+
+  @@index([partner_member_id], map: "FK_63BA77F55E4048EA")
+  @@index([partner_id], map: "FK_63BA77F59393F8FE")
+  @@index([partner_bundle_id], map: "FK_63BA77F5DA2D42C7")
+}
+
+model verification_request_tmp_session {
+  id                Int             @id @default(autoincrement())
+  partner_bundle_id Int?
+  partner_member_id Int?
+  member_contact    String          @db.LongText
+  status            Int             @db.SmallInt
+  created_at        DateTime        @db.DateTime(0)
+  updated_at        DateTime?       @db.DateTime(0)
+  user              user?           @relation(fields: [partner_member_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_2ACD58185E4048EA")
+  partner_bundle    partner_bundle? @relation(fields: [partner_bundle_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_2ACD5818DA2D42C7")
+
+  @@unique([partner_bundle_id, partner_member_id], map: "UNIQ_2ACD5818DA2D42C75E4048EA")
+  @@index([partner_member_id], map: "FK_2ACD58185E4048EA")
+}
+
+model verification_request_unprovided {
+  id                              Int                           @id @default(autoincrement())
+  uuid                            String                        @db.VarChar(36)
+  user_id                         Int
+  verification_request_session_id Int?
+  verification_request_member_id  Int
+  document_product_id             Int
+  document_total_ignore           Int
+  user_comment                    String?                       @db.VarChar(255)
+  token_amount                    Int
+  created_at                      DateTime                      @db.DateTime(0)
+  updated_at                      DateTime?                     @db.DateTime(0)
+  user                            user                          @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "FK_A9E0EC82A76ED395")
+  verification_request_session    verification_request_session? @relation(fields: [verification_request_session_id], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "FK_A9E0EC82B69FBC11")
+  verification_request_member     verification_request_member   @relation(fields: [verification_request_member_id], references: [id], onUpdate: Restrict, map: "FK_A9E0EC82D815F31F")
+  document_product                document_product              @relation(fields: [document_product_id], references: [id], onUpdate: Restrict, map: "FK_A9E0EC82E447CD0C")
+  partner_token_transaction       partner_token_transaction[]
+
+  @@unique([user_id, verification_request_session_id, verification_request_member_id, document_product_id], map: "UNIQ_A9E0EC82A76ED395B69FBC11D815F31FE447CD0C")
+  @@index([verification_request_session_id], map: "FK_A9E0EC82B69FBC11")
+  @@index([verification_request_member_id], map: "FK_A9E0EC82D815F31F")
+  @@index([document_product_id], map: "FK_A9E0EC82E447CD0C")
+  @@index([uuid])
+}
+
+model veriflow_check {
+  id            Int    @id @default(autoincrement())
+  barcode       String @db.VarChar(31)
+  check_status  String @db.VarChar(31)
+  component_key String @db.VarChar(31)
+
+  @@index([barcode], map: "veriflowcheck_barcode_idx")
+  @@index([component_key], map: "veriflowcheck_component_key_idx")
+  @@index([check_status], map: "veriflowcheck_status_idx")
+}
+
+model veriflow_log {
+  id                        Int                        @id @default(autoincrement())
+  request_body              String?                    @db.LongText
+  created_at                DateTime?                  @db.DateTime(0)
+  type                      String?                    @db.VarChar(16)
+  user_case_id              Int?
+  case_reference            String?                    @db.VarChar(31)
+  df_case_ref               String?                    @db.VarChar(31)
+  case_stage                String?                    @db.VarChar(11)
+  case_type                 String?                    @db.VarChar(11)
+  queue_status              veriflow_log_queue_status? @default(pushed)
+  api_case_detail_done      Boolean                    @default(true)
+  api_case_report_data_done Boolean                    @default(true)
+  user_case                 user_case?                 @relation(fields: [user_case_id], references: [id], onUpdate: Restrict, map: "FK_988F1A85971DCAFF")
+
+  @@index([user_case_id], map: "IDX_988F1A85971DCAFF")
+  @@index([df_case_ref], map: "df_case_idx")
+  @@index([type], map: "type_idx")
+}
+
+model visa_type {
+  id   Int    @id @default(autoincrement())
+  uuid String @unique(map: "UNIQ_A3E5D307D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  name String @db.VarChar(150)
+
+  @@index([uuid], map: "uuid_idx")
+}
+
+model voucher {
+  id                   Int                    @id @default(autoincrement())
+  uuid                 String                 @unique(map: "UNIQ_1392A5D8D17F50A6") @default(dbgenerated("(uuid())")) @db.VarChar(36)
+  code                 String                 @unique(map: "UNIQ_1392A5D877153098") @db.VarChar(255)
+  description          String?                @db.LongText
+  remain               Int
+  used                 Int
+  discount             Int
+  is_active            Boolean
+  active_from          DateTime               @db.DateTime(0)
+  active_to            DateTime?              @db.DateTime(0)
+  created_at           DateTime               @db.DateTime(0)
+  updated_at           DateTime               @db.DateTime(0)
+  partner_id           Int?
+  discount_type        voucher_discount_type?
+  max_discount         Int?
+  min_purchase         Int?
+  map_products         String?                @db.LongText
+  limit_selection      Int?
+  last_used            DateTime?              @db.DateTime(0)
+  partner              partner?               @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_1392A5D89393F8FE")
+  verification_request verification_request?
+  voucher_user         voucher_user[]
+
+  @@index([partner_id], map: "IDX_1392A5D89393F8FE")
+  @@index([uuid], map: "uuid_idx")
+}
+
+model voucher_user {
+  id                          Int                          @id @default(autoincrement())
+  voucher_id                  Int?
+  user_id                     Int?
+  created_at                  DateTime                     @db.DateTime(0)
+  partner_id                  Int?
+  verification_id             Int?                         @unique(map: "UNIQ_8CFE56F11623CB0A")
+  used_at                     DateTime?                    @db.DateTime(0)
+  paid_at                     DateTime?                    @db.DateTime(0)
+  is_migrated                 Boolean                      @default(false)
+  verification                verification?                @relation(fields: [verification_id], references: [id], onUpdate: Restrict, map: "FK_8CFE56F11623CB0A")
+  voucher                     voucher?                     @relation(fields: [voucher_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_8CFE56F128AA1B6F")
+  partner                     partner?                     @relation(fields: [partner_id], references: [id], onUpdate: Restrict, map: "FK_8CFE56F19393F8FE")
+  user                        user?                        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "FK_8CFE56F1A76ED395")
+  transaction                 transaction[]
+  user_order                  user_order[]
+  verification_request_member verification_request_member?
+
+  @@index([voucher_id], map: "IDX_8CFE56F128AA1B6F")
+  @@index([partner_id], map: "IDX_8CFE56F19393F8FE")
+  @@index([user_id], map: "IDX_8CFE56F1A76ED395")
+}
+
+enum json_schema_form_default_type {
+  Education
+  License
+  GoodStanding
+  WorkExperience
+}
+
+enum dataflow_status_payment_log_type {
+  payment
+  refund
+}
+
+enum profile_share_link_permission {
+  LIMITED
+  FULL
+}
+
+enum contact_request_status {
+  APPROVED
+  PENDING
+  REJECTED
+  CANCELED
+}
+
+enum contact_setting_history_old_status {
+  YES_AGREE
+  YES_REVIEW
+  NO_3MO
+  NO_6MO
+  NO_12MO
+  NO_18MO
+  NO_ALL
+}
+
+enum partner_bundle_payment_mode {
+  partner_pay
+  member_pay
+}
+
+enum share_link_permission {
+  LIMITED
+  FULL
+}
+
+enum contact_setting_history_status {
+  YES_AGREE
+  YES_REVIEW
+  NO_3MO
+  NO_6MO
+  NO_12MO
+  NO_18MO
+  NO_ALL
+}
+
+enum user_detail_title {
+  dr
+}
+
+enum veriflow_log_queue_status {
+  idle
+  pushed
+}
+
+enum subscription_invoices_status {
+  SUCCESS
+  FAILED
+  TERMINATED
+}
+
+enum voucher_discount_type {
+  // % @map("%")
+  USD
+}
+
+enum bundle_bundle_type {
+  NORMAL_BUNDLE
+  PARTNER_BUNDLE
+  CAMPAIGN_BUNDLE
+  MIGRATE_BUNDLE
+}
+
+enum landing_page_type {
+  USER
+  PARTNER
+}
+
+enum recruitment_info_contacted_by_recruiter {
+  YES_AGREE
+  YES_REVIEW
+  NO_3MO
+  NO_6MO
+  NO_12MO
+  NO_18MO
+  NO_ALL
+}
+
+enum verification_request_member_request_status {
+  PENDING
+  CANCEL
+  REJECTED
+  EXPIRED
+  ACCEPTED
+}
+
+enum verification_request_member_process_status {
+  UNCONFIRMED
+  CONFIRMED
+  PAID
+  COMPLETED
+}
+
+enum user_case_service {
+  VERIFLOW
+  IDNOW
+}
+
+enum user_type {
+  NORMAL
+  PARTNER
+  USER1
+  USER2
+  USER2_PRO
+  USER3
+  USER3_ALUMNI
+}
+
+enum user_initial_type {
+  NORMAL
+  PARTNER
+  USER1
+  USER2
+  USER2_PRO
+  USER3
+  USER3_ALUMNI
+}
+
+enum user_erase_data_status {
+  PENDING
+  APPROVED
+  CANCELLED
+  NONE
+  ERASED
+}
